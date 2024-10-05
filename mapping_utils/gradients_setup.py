@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+
 class Tissue:
     def __init__(self, num_rows:int, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
         self.name = ''
@@ -40,7 +41,9 @@ ret_efnB = {}
 
 retina = Tissue(100, ret_EphA, ret_EphB, ret_efnA, ret_efnB)
 
-plt.imshow(retina.grid_fract[0]**1.5 * retina.isl2 + retina.grid_fract[1]**1.5) # Messing around showing what superimposed gradients of A and Bs with Isl2 would look like
+test_gradient = retina.grid_fract[0]**1.2 * retina.isl2
+
+plt.imshow(test_gradient) # + retina.grid_fract[1]**1.5) # Messing around showing what superimposed gradients of A and Bs with Isl2 would look like
 # TODO need to figure out a good scheme for processing the mutants 
 #       - need to add a function to delete specific targets, both with Isl2, and constitutively
 #       - need to make a presentable array of 
@@ -49,7 +52,6 @@ plt.imshow(retina.grid_fract[0]**1.5 * retina.isl2 + retina.grid_fract[1]**1.5) 
 #           - positions in the SC
 #           - the efnA & B in the SC
 #      This all needs to be processed in such a way that it is easy to reference for the refinement algo
-
 
 
 
@@ -91,4 +93,5 @@ for pair in pairs:
 
 
 
-
+def get_frac_pos(axon_list, target_df):
+    pass

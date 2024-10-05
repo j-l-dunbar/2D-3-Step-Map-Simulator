@@ -1,77 +1,56 @@
 
 import numpy as np
-from numba import njit
+import matplotlib.pyplot as plt
 
-pair = "pairs[0]"
+"""_summary_
+    - This is going to accept the precalculated positions and reference everything according to the RCmap      
+    
+Returns:
+    _type_: _description_
+"""
 
-axon1, axon2 = pair
-
-retina = ''
-colliculus = ''
-RCmap = ''
-
-source = retina
-target = colliculus
-
-
-
-
-# %%
-topo_map = RCmap
-
-ax1, ax2 = pair
-target_pos = target.positions[topo_map[ax1]]
-target_efnA = target.efnA[target_pos[0]]
-
-target_pos, target_efnA
-
-source_xy = ''
-target_xy = ''
-
-
-# %%
-# TODO need to update these with real numbers
-alpha = 1
-beta = 1
-gamma = 1 
-d = 1
-R = 1
-
-
-
-
+class Mapper:
+    def __init__(self, axons:np.array, refinement_map:np.array, EphA:np.array, EphB:np.array, efnA:np.array, efnB:np.array, source_positions:np.array, target_positions:np.array):
+        """ This is going to take the relevant 2D arrays and use them to refine the map"""
+        # 1 -- define the lookup tables to be referenced in the comparisson
+        self.axons = axons
+        self.ref_map = refinement_map
+        self.EphA = EphA
+        self.efnA = efnA
+        self.EphB = EphB
+        self.efnB = efnB
+        self.src_pos = source_positions
+        self.trg_pos = target_positions
+       
+        # initialize the random arrangement between the source and target 
+        self.RCmap = np.random.permutation(axons.shape[0])
+        
+        # 2 -- Pair up the Axons 
+        pair_list = random_pairs(axons.shape[0])
+        
+        
+        # 3 -- check them according to the refinement algorithm
+        
+        # 4 -- decide which pairs to swap and which to keep
+        
+        # 5 -- update the RCmap
+        
+        pass
 
 @njit
-def eChem_A(ax1, ax2, df, alpha=alpha) ->  np.ndarray:
+def all_eTotal(pairs, df) -> np.ndarray:
     """
-    EphA/ephrin-A
-    """
-    eph_diff = source.EphA[ax1] - source.EphA[ax2]
-    efn_diff = target.efnA[target.positions[topo_map[ax2]][0]] - target.efnA[target.positions[topo_map[ax1]][0]] # this converts the topographic map into an efnA concentation at the target for axon1 and axon2
-    return alpha * (eph_diff) * (efn_diff) 
+    determines if a pair will be swaped stochastically, proportional to eTotal between the pair 
 
-@njit
-def eChem_B(ax1, ax2, df, beta=beta) ->  np.ndarray:
-    """
-    EphB/ephrin-B
-    """
-    eph_diff = source.EphB[ax1] - source.EphB[ax2]
-    efn_diff = target.efnB[target.positions[topo_map[ax2]][0]] - target.efnB[target.positions[topo_map[ax1]][0]] # this converts the topographic map into an efnB concentation at the target for axon1 and axon2
-    return beta * (eph_diff) * (efn_diff) 
-@njit
-def eAct(ax1 :  np.ndarray, ax2 : np.ndarray,  df : np.ndarray) ->  np.ndarray:
-    """
-    function of the distance between the axons in the target (SC) vs in the source tissue (ret or V1)
+    Args:
+        pairs (_type_): the pairs of axons to be tested 
+        df (_type_): the entire map to be refined 
 
     Returns:
-        np.ndarray: the difference in activity energy between all pairs of compared axons
+        np.ndarray: defines which pairs will be updated and which will be left alone, according to the energy function
     """
-    source_dist = np.abs(df[0,ax1] - df[0,ax2])
-    cross_correlation = np.exp(-source_dist/R)              # Cij in Koulakov&Tsigankov 2006
-    
-    sc_dist = np.abs(df[1,ax1] - df[1,ax2])                 # r in Koulakov&Tsigankov 2006
-    form_attract = np.exp(-(sc_dist**2) /(2*d**2))          # U in Koulakov&Tsigankov 2006 - overlap of dendritic arbors (Gaussian) -- 'd' is an experimental value [3%of the SC dimensions, see Methods, Eq. (2)]
-    return -(gamma/2) * cross_correlation * form_attract
+    switch_array =  np.array([pair_eTot(pair, df) for pair in pairs]) 
+    return switch_array 
 
 @njit
 def pair_eTot(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
@@ -86,20 +65,63 @@ def pair_eTot(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
         np.ndarray: the combined chemical and activity defined energies to define if a switch will occour
     """
     ax1, ax2 = pair
-    return eChem_A(ax1, ax2, df) + eChem_B(ax1, ax2, df) + eAct(ax1, ax2, df) # eTotal
+    return eChemA(RCmap, ax1, ax2, EphA, efnA, alpha) + eChemB(RCmap, ax1, ax2, EphB, efnB, beta) + eAct(ax1, ax2, src_pos, trg_pos) # eTotal
+
+
+
 
 @njit
-def swap_pos_sc(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
-    """
-    the positions in the sc are swaped given their p-switch (proportional to eTotal)
+def random_pairs(length) -> np.ndarray:
+    """ make a set of random pairs for the eChme+eAct comparisson """
+    if length%2:
+        length -=1
+    return np.random.permutation(length).reshape(length//2, 2)
 
-    Args:
-        pair (np.ndarray): the pair of axons to be swapped
-        df (np.ndarray): the entire map that is to be refined
+@njit
+def eChemA(RCmap: np.ndarray, ax1 : np.ndarray, ax2 : np.ndarray, EphA : np.ndarray, efnA: np.ndarray, alpha:int) ->  float:
+    """
+     function of the chemical 'strength' between the two positions as defined by the target efnA and source EphA 
+
+    E = α (RA1 L A2 + RA2 L A1) − α (RA1 L A1 + RA2 L A2) = α (RA1 − RA2)(L A2 − L A1) = α∇ RA∇ L Ax2 (Tsigankov and Koulakov, 2006, p. 106)
+    EA = alpha * ( RA(RofL(iL2)) - RA(RofL(iL)) ) * (LA(iL2)-LA(iL)) in Savier 2017 
 
     Returns:
-        np.ndarray: the updated map, with all pairs of axons that meet the threshold, swapped
+        np.ndarray: the difference in chemical energy between all pairs of compared axons
     """
-    ax1, ax2 = pair
-    df[1, ax1], df[1, ax2] = df[1, ax2], df[1, ax1] # swap
-    return df
+    inv_map = RCmap.argsort()
+    
+    ephA_diff = EphA[ax1] - EphA[ax2]
+    efnA_diff = efnA[RCmap[ax1]] - efnA[RCmap[ax1]]
+    return alpha * (ephA_diff) * (efnA_diff) 
+
+@njit
+def eChemB(RCmap: np.ndarray, ax1 : np.ndarray, ax2 : np.ndarray, EphB : np.ndarray, efnB: np.ndarray, beta:int) ->  float:
+    """
+     function of the chemical 'strength' between the two positions as defined by the target efnB and source EphB 
+
+    E = α (RA1 L A2 + RA2 L A1) − α (RA1 L A1 + RA2 L A2) = α (RA1 − RA2)(L A2 − L A1) = α∇ RA∇ L Ax2 (Tsigankov and Koulakov, 2006, p. 106)
+    EA = alpha * ( RA(RofL(iL2)) - RA(RofL(iL)) ) * (LA(iL2)-LA(iL)) in Savier 2017 
+
+    Returns:
+        np.ndarray: the difference in chemical energy between all pairs of compared axons
+    """
+    ephB_diff = EphB[ax1] - EphB[ax2]
+    efnB_diff = efnB[RCmap[ax1]] - efnB[RCmap[ax1]]
+    print("EphB formula needs to be inserted")
+    return beta * (ephB_diff) * (efnB_diff) # TODO check this and change it to the correct formula for EphB signalling 
+
+@njit
+def eAct(RCmap, ax1, ax2,  src_pos, trg_pos, R:float, gamma:float, d:float) ->  np.ndarray:
+    """
+    function of the distance between the axons in the target (SC) vs in the source tissue (ret or V1)
+
+    Returns:
+        np.ndarray: the difference in activity energy between all pairs of compared axons
+    """
+    
+    source_dist = np.abs(src_pos[ax1] - src_pos[ax2])
+    cross_correlation = np.exp(-source_dist/R)              # Cij in Koulakov&Tsigankov 2006
+    
+    sc_dist = np.abs(trg_pos[RCmap[ax1]] - trg_pos[RCmap[ax2]]) # r in Koulakov&Tsigankov 2006
+    form_attract = np.exp(-(sc_dist**2) /(2*d**2))          # U in Koulakov&Tsigankov 2006 - overlap of dendritic arbors (Gaussian) -- 'd' is an experimental value [3%of the SC dimensions, see Methods, Eq. (2)]
+    return -(gamma/2) * cross_correlation * form_attract
