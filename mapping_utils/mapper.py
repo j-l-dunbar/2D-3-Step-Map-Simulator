@@ -25,16 +25,19 @@ target_efnA = target.efnA[target_pos[0]]
 
 target_pos, target_efnA
 
-
+source_xy = ''
+target_xy = ''
 
 
 # %%
 # TODO need to update these with real numbers
-alpha = 0
-beta = 0
-gamma = 0 
-d = 0
-R = 0
+alpha = 1
+beta = 1
+gamma = 1 
+d = 1
+R = 1
+
+
 
 
 
