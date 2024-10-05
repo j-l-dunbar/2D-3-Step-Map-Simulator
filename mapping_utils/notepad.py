@@ -19,4 +19,3 @@ coords = np.array(coords).T
 print(coords.shape)
 print(coords[10,11])
 # %%
-coord
