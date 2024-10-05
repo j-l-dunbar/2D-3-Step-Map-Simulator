@@ -10,7 +10,7 @@ Returns:
 """
 
 class Mapper:
-    def __init__(self, axons:np.array, refinement_map:np.array, EphA:np.array, EphB:np.array, efnA:np.array, efnB:np.array, source_positions:np.array, target_positions:np.array):
+    def __init__(self, axons:np.array, refinement_map:np.array, EphA:np.array, EphB:np.array, efnA:np.array, efnB:np.array, source_positions:np.array, target_positions:np.array, alpha, beta, gamma, R, d):
         """ This is going to take the relevant 2D arrays and use them to refine the map"""
         # 1 -- define the lookup tables to be referenced in the comparisson
         self.axons = axons
@@ -21,6 +21,11 @@ class Mapper:
         self.efnB = efnB
         self.src_pos = source_positions
         self.trg_pos = target_positions
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.R = R
+        self.d = d
        
         # initialize the random arrangement between the source and target 
         self.RCmap = np.random.permutation(axons.shape[0])
@@ -28,7 +33,20 @@ class Mapper:
         # 2 -- Pair up the Axons 
         pair_list = random_pairs(axons.shape[0])
         
-        
+        sim_params = {
+            'RCmap': self.RCmap,
+            'EphA': self.EphA,
+            'efnA': self.efnA,
+            'alpha': self.alpha,
+            'EphB': self.EphB,
+            'efnB': self.efnB,
+            'beta': self.beta,
+            'src_pos': self.src_pos,
+            'trg_pos': self.trg_pos, 
+            'R': self.R, 
+            'gamma': self.gamma, 
+            'd': self.d, 
+        }
         # 3 -- check them according to the refinement algorithm
         
         # 4 -- decide which pairs to swap and which to keep
@@ -38,7 +56,7 @@ class Mapper:
         pass
 
 @njit
-def all_eTotal(pairs, df) -> np.ndarray:
+def all_eTotal(pairs, sim_params) -> np.ndarray:
     """
     determines if a pair will be swaped stochastically, proportional to eTotal between the pair 
 
@@ -49,23 +67,19 @@ def all_eTotal(pairs, df) -> np.ndarray:
     Returns:
         np.ndarray: defines which pairs will be updated and which will be left alone, according to the energy function
     """
-    switch_array =  np.array([pair_eTot(pair, df) for pair in pairs]) 
+    switch_array =  np.array([pair_eTot(pair, **sim_params) for pair in pairs]) 
     return switch_array 
 
 @njit
-def pair_eTot(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
+def pair_eTot(pair : np.ndarray, RCmap, EphA, efnA, alpha, EphB, efnB, beta, src_pos, trg_pos, R, gamma, d, **sim_params) -> np.ndarray:
     """
     function of the chemical 'energy' and the distance in the source tissue (ret or V1) (representing activity) 
-
-    Args:
-        pair (np.ndarray): the two axons that are to be checked
-        df (np.ndarray): the entire map that is to be refined
 
     Returns:
         np.ndarray: the combined chemical and activity defined energies to define if a switch will occour
     """
     ax1, ax2 = pair
-    return eChemA(RCmap, ax1, ax2, EphA, efnA, alpha) + eChemB(RCmap, ax1, ax2, EphB, efnB, beta) + eAct(ax1, ax2, src_pos, trg_pos) # eTotal
+    return eChemA(RCmap, ax1, ax2, EphA, efnA, alpha) + eChemB(RCmap, ax1, ax2, EphB, efnB, beta) + eAct(RCmap, ax1, ax2,  src_pos, trg_pos, R, gamma, d) # eTotal
 
 
 
