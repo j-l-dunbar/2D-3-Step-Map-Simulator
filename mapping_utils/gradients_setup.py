@@ -20,10 +20,10 @@ class Tissue:
         self.isl2 = np.random.randint(0, 2, (num_rows, num_rows)) # 2D array of Isl2+ cells (technically only available in the retina)
         
     def set_gradients(self, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
-        self.EphA = self.sum_grads(EphA, self.grid_fract[0])
-        self.EphB = self.sum_grads(EphB, self.grid_fract[1])
-        self.efnA = self.sum_grads(efnA, self.grid_fract[0])
-        self.efnB = self.sum_grads(efnB, self.grid_fract[1])
+        self.EphA = self.sum_grads(EphA)
+        self.EphB = self.sum_grads(EphB)
+        self.efnA = self.sum_grads(efnA)
+        self.efnB = self.sum_grads(efnB)
 
     def sum_grads(self, gradient_dict:dict, normalize=False)-> np.ndarray:
         """ combines the individual gene in a family into a single gradient
@@ -35,9 +35,9 @@ class Tissue:
         summed = np.sum(np.array(list(gradient_dict.values())), axis=0)
         summed[summed<0] = 0 # for hypothetical negative 'knockin' mutants
 
-        # if normalize:
-        #     # summed = (summed-summed.min())/(summed.max()-summed.min()) + 0.1
-        #     summed = self.normalize_grad(summed)
+        if normalize:
+            # summed = (summed-summed.min())/(summed.max()-summed.min()) + 0.1
+            summed = self.normalize_grad(summed)
         return summed
     
     def normalize_grad(self, yy):
