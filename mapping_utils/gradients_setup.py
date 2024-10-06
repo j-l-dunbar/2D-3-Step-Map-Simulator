@@ -139,7 +139,7 @@ def make_map_df(RCmap, retina, colliculus):
 
 df = make_map_df(np.random.permutation(Num**2), retina, colliculus)
 df        # SourceID, EphA, EphB, RetX, RetY, RCmap, efnA, efnB, scX, scY
-
+          #    0        1     2     3     4     5     6     7     8    9
 #%%       
         
     
@@ -150,36 +150,6 @@ df        # SourceID, EphA, EphB, RetX, RetY, RCmap, efnA, efnB, scX, scY
 
 
 
-
-
-
-
-
-
-
-
-
-sim_params = {
-    'axons': retina.positions, 
-    'term_zones': colliculus.positions,
-    'EphA': retina.EphA,
-    'efnA': retina.efnA,
-    'alpha': 70,
-    'EphB': retina.EphB,
-    'efnB': retina.efnB,
-    'beta': 70,
-    'source_positions': retina.grid_fract,
-    'target_positions': retina.grid_fract, 
-    'R': 0.1, 
-    'gamma': 10, 
-    'd': 0.3, 
-}
-
-# TODO Build a dataframe that can be passed to the mapper script 
-#   - it needs to be able to accept the calculated values for each axon's EpHA, efnA, B, b, position in the source, and position in the target.
-
-
-#%%
 
 
 
