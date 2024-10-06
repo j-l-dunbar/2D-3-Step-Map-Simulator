@@ -45,11 +45,11 @@ def sum_grads_list(grad_list):
     for grad in grad_list[1:]:
         summed+= grad
     summed[summed<0] = 0 # for hypothetical negative 'knockin' mutants
-    # summed = normalize_grad(summed) 
+    summed = normalize_grad(summed) 
     return summed
 
 @njit
-def normalize_grad(yy): # TODO this normalizing strategy doesn't work for the 2D gradients -- this needs to be coded differently -- normalizing the gradients before stretching them out could be a slution, but that would need come way to incorporate specific Isl2 insertions/deletions for specific members, after they have been summed and turned 2D
+def normalize_grad(xy): # TODO this normalizing strategy doesn't work for the 2D gradients -- this needs to be coded differently -- normalizing the gradients before stretching them out could be a slution, but that would need come way to incorporate specific Isl2 insertions/deletions for specific members, after they have been summed and turned 2D
     """_summary_
 
     Args:
@@ -58,10 +58,13 @@ def normalize_grad(yy): # TODO this normalizing strategy doesn't work for the 2D
     Returns:
         _type_: The array normalized to set the area under the curve to be 1.
     """
-    x_spacing = 1/yy.shape[0]
-    auc = np.trapz(yy, dx=x_spacing)
-    return yy/auc    
+    # for i, yy in enumerate(xy): # this only works for 1D arrays... 
+    #     x_spacing = 1/yy.shape[0]
+    #     auc = np.trapz(yy, dx=x_spacing)
+    #     xy[i] = yy/auc  
+    # return xy  
 
+    return xy/np.median(xy)
 
 
 retina = Tissue(Num)
@@ -121,7 +124,6 @@ plt.imshow(retina.EphB)
 plt.show()
 plt.imshow(retina.EphA)
 
-#%%
 
 def make_map_df(RCmap, retina, colliculus):
     
@@ -138,24 +140,20 @@ def make_map_df(RCmap, retina, colliculus):
     return np.vstack((id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]))
 
 df = make_map_df(np.random.permutation(Num**2), retina, colliculus)
-df        # SourceID, EphA, EphB, RetX, RetY, RCmap, efnA, efnB, scX, scY
-          #    0        1     2     3     4     5     6     7     8    9
-#%%       
         
     
-
-
-
-
-
-
-
-
-
-
-m = Mapper(**sim_params)
-refined_map = m.refine_map()
-refined_map
+plt.imshow(df)
 #%%
+
+
+
+
+
+
+
+
+m = Mapper(df)
+refined_map = m.refine_map()
+
+
 plt.imshow(refined_map)
-# %%

@@ -10,7 +10,7 @@ Returns:
 """
 
 class Mapper:
-    def __init__(self, df, alpha, beta, gamma, R, d):
+    def __init__(self, df, alpha=70, beta=70, gamma=129, R=0.1, d=0.03):
         """ This is going to take the relevant 2D arrays and use them to refine the map"""
         # 1 -- define the lookup tables to be referenced in the comparisson
         self.df = df
@@ -22,8 +22,8 @@ class Mapper:
         
         
     def refine_map(self) -> None:
-        RCmap = refine_map_iter(self.df, self.alpha, self.beta, self.gamma, self.R, self.d)
-        return RCmap
+        df = refine_map_iter(self.df, self.alpha, self.beta, self.gamma, self.R, self.d)
+        return df
 
 @njit
 def all_eTotal(pairs, df, alpha, beta, gamma, R, d) -> np.ndarray:
@@ -44,7 +44,9 @@ def pair_eTot(pair, df, alpha, beta, gamma, R, d) -> np.ndarray:
     Returns:
         np.ndarray: the combined chemical and activity defined energies to define if a switch will occour
     """   
-    return eChemA(pair, df, alpha) + eChemB(pair, df, beta) + eAct(pair, df, R, gamma, d) # eTotal
+    ax1, ax2 = pair
+    return eChemA(ax1, ax2, df, alpha) + eChemB(ax1, ax2, df, beta) + eAct(ax1, ax2, df, R, gamma, d) # eTotal
+
 
 @njit
 def swap_pos_sc(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
@@ -67,8 +69,8 @@ def update_df(pairs, df) -> np.ndarray:
         np.ndarray: the updated map that has been refined
     """
     for pair in pairs:
-        RCmap = swap_pos_sc(pair, df)
-    return RCmap
+        df = swap_pos_sc(pair, df)
+    return df
 
 @njit
 def random_pairs(length) -> np.ndarray:
@@ -139,7 +141,7 @@ def refine_map_iter(df, alpha, beta, gamma, R, d, n_repeats=2E2, deterministic=F
 
 
     for i in range(int(n_repeats)):
-        pairs = random_pairs(RCmap.shape[0])                           # makes a complete set of random pairs
+        pairs = random_pairs(df[0].shape[0])                           # makes a complete set of random pairs
         total_energy = all_eTotal(pairs, df, alpha, beta, gamma, R, d)                # calcs if eTotal sufficient for swap
         
         norm_eTot = 1 / (1 + np.exp(4 * total_energy))      # normalization of the energy measurements
