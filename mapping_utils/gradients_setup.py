@@ -1,8 +1,8 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-from mapper import Mapper
-
+from mapper import Mapper, refine_map_iter
+Num = 100
 
 class Tissue:
     def __init__(self, num_rows:int):
@@ -25,7 +25,7 @@ class Tissue:
         self.efnA = self.sum_grads(efnA)
         self.efnB = self.sum_grads(efnB)
 
-    def sum_grads(self, gradient_dict:dict, normalize=False)-> np.ndarray:
+    def sum_grads(self, gradient_dict:dict, normalize=True)-> np.ndarray:
         """ combines the individual gene in a family into a single gradient
                 all contributing to the whole
 
@@ -52,8 +52,10 @@ class Tissue:
         x_spacing = 1/len(yy)
         auc = np.trapz(yy, dx=x_spacing)
         return yy/auc    
-    
-retina = Tissue(100)
+
+
+
+retina = Tissue(Num)
 x = retina.grid_fract
 Num = retina.positions.shape[0]
 
@@ -93,8 +95,8 @@ cort_EphAs_dict = {
 
 retina.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnAs_dict)
 
-colliculus = Tissue(100)
-RCmap = np.random.permutation(colliculus.axons)
+colliculus = Tissue(Num)
+RCmap = np.random.permutation(colliculus.positions)
 RCmap[0]
 
 
@@ -108,13 +110,16 @@ sim_params = {
     'EphB': retina.EphB,
     'efnB': retina.efnB.T,
     'beta': 70,
-    'src_pos': retina.grid_fract,
-    'trg_pos': retina.grid_fract, 
+    'source_positions': retina.grid_fract.T,
+    'target_positions': retina.grid_fract.T, 
     'R': 0.1, 
     'gamma': 10, 
     'd': 0.3, 
 }
 
-
-def get_frac_pos(axon_list, target_df):
-    pass
+m = Mapper(**sim_params)
+refined_map = m.refine_map()
+refined_map
+#%%
+plt.imshow(refined_map)
+# %%
