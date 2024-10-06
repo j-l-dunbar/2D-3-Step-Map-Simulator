@@ -22,10 +22,11 @@ class Mapper:
         
         
     def refine_map(self) -> None:
+        print('Refining map...')
         df = refine_map_iter(self.df, self.alpha, self.beta, self.gamma, self.R, self.d)
         return df
 
-@njit
+# @njit
 def all_eTotal(pairs, df, alpha, beta, gamma, R, d) -> np.ndarray:
     """
     determines if a pair will be swaped stochastically, proportional to eTotal between the pair 
@@ -36,7 +37,7 @@ def all_eTotal(pairs, df, alpha, beta, gamma, R, d) -> np.ndarray:
     switch_array =  np.array([pair_eTot(pair, df, alpha, beta, gamma, R, d) for pair in pairs]) 
     return switch_array 
 
-@njit
+# @njit
 def pair_eTot(pair, df, alpha, beta, gamma, R, d) -> np.ndarray:
     """
     function of the chemical 'energy' and the distance in the source tissue (ret or V1) (representing activity) 
@@ -45,10 +46,10 @@ def pair_eTot(pair, df, alpha, beta, gamma, R, d) -> np.ndarray:
         np.ndarray: the combined chemical and activity defined energies to define if a switch will occour
     """   
     ax1, ax2 = pair
-    return eChemA(ax1, ax2, df, alpha) + eChemB(ax1, ax2, df, beta) + eAct(ax1, ax2, df, R, gamma, d) # eTotal
+    return eChemA(ax1, ax2, df, alpha) - eChemB(ax1, ax2, df, beta) + eAct(ax1, ax2, df, R, gamma, d) # eTotal
 
 
-@njit
+# @njit
 def swap_pos_sc(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
     """
     the positions in the sc are swaped given their p-switch (proportional to eTotal)
@@ -61,7 +62,7 @@ def swap_pos_sc(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
 
     return df
 
-@njit
+# @njit
 def update_df(pairs, df) -> np.ndarray:
     """
     swaps the axons if sufficient p-switch
@@ -72,14 +73,14 @@ def update_df(pairs, df) -> np.ndarray:
         df = swap_pos_sc(pair, df)
     return df
 
-@njit
+# @njit
 def random_pairs(length) -> np.ndarray:
     """ make a set of random pairs for the eChme+eAct comparisson """
     if length%2:
         length -=1
     return np.random.permutation(length).reshape(length//2, 2)
 
-@njit
+# @njit
 def eChemA(ax1, ax2, df, alpha) ->  float:
     """
      function of the chemical 'strength' between the two positions as defined by the target efnA and source EphA 
@@ -94,7 +95,7 @@ def eChemA(ax1, ax2, df, alpha) ->  float:
     efnA_diff = df[6][ax2] - df[6][ax1] # df[6] is efnA
     return alpha * (ephA_diff) * (efnA_diff) 
 
-@njit
+# @njit
 def eChemB(ax1, ax2, df, beta) ->  float:
     """
      function of the chemical 'strength' between the two positions as defined by the target efnB and source EphB 
@@ -109,7 +110,7 @@ def eChemB(ax1, ax2, df, beta) ->  float:
     efnB_diff = df[7][ax2] - df[7][ax1] # df[7] is efnB
     return beta * (ephB_diff) * (efnB_diff) # TODO check this and change it to the correct formula for EphB signalling 
 
-@njit
+# @njit
 def eAct(ax1, ax2, df, R, gamma, d) ->  np.ndarray:
     """
     function of the distance between the axons in the target (SC) vs in the source tissue (ret or V1)
@@ -125,7 +126,7 @@ def eAct(ax1, ax2, df, R, gamma, d) ->  np.ndarray:
     form_attract = np.exp(-(sc_dist**2) /(2*d**2))          # U in Koulakov&Tsigankov 2006 - overlap of dendritic arbors (Gaussian) -- 'd' is an experimental value [3%of the SC dimensions, see Methods, Eq. (2)]
     return -(gamma/2) * cross_correlation * form_attract
 
-@njit
+# @njit
 def refine_map_iter(df, alpha, beta, gamma, R, d, n_repeats=2E2, deterministic=False) -> np.ndarray:
     """
     refines the collicular map N times, iteratively 
