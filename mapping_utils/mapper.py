@@ -86,14 +86,14 @@ def swap_pos_sc(pair : np.ndarray, RCmap : np.ndarray, axons: np.ndarray) -> np.
     return RCmap
 
 @njit
-def update_df(pairs : np.ndarray, df : np.ndarray) -> np.ndarray:
+def update_df(pairs, RCmap, axons) -> np.ndarray:
     """
     swaps the axons if sufficient p-switch
     Returns:
         np.ndarray: the updated map that has been refined
     """
     for pair in pairs:
-        df = swap_pos_sc(pair, df)
+        df = swap_pos_sc(pair, RCmap, axons)
     return df
 
 @njit
@@ -149,3 +149,34 @@ def eAct(ax1, ax2, tz1, tz2,  src_pos, trg_pos, R:float, gamma:float, d:float) -
     sc_dist = np.abs(trg_pos[tz1] - trg_pos[tz2]) # r in Koulakov&Tsigankov 2006
     form_attract = np.exp(-(sc_dist**2) /(2*d**2))          # U in Koulakov&Tsigankov 2006 - overlap of dendritic arbors (Gaussian) -- 'd' is an experimental value [3%of the SC dimensions, see Methods, Eq. (2)]
     return -(gamma/2) * cross_correlation * form_attract
+
+@njit
+def refine_map_iter(RCmap, n_repeats=2E4, deterministic=False, **sim_params) -> np.ndarray:
+    """
+    refines the collicular map N times, iteratively 
+
+    Raises:
+        ValueError: The total number of axons must be even, simply due to the mechanism chosen for refinement. All axons are paired with another, and so the total must be even. 
+
+    Returns:
+        np.ndarray: the refined map with the residuals of the refinement process (representing how the refinement progressed)
+    """
+    # Num = len(df[0]) # number of elements to be paired
+    # if Num%2: raise ValueError('There must be an even number of neurons to compare')
+
+
+    switch_residuals = []
+    for _ in range(int(n_repeats)):
+        pairs = random_pairs(Num)                           # makes a complete set of random pairs
+        total_energy = all_eTotal(pairs, df)                # calcs if eTotal sufficient for swap
+        switch_residuals.append(total_energy[total_energy.argsort()[5:]].mean())         # tracking the progress of the mapping -- measures the mean of the 5 lowest energy pairs (better to swap than hold)
+        
+        norm_eTot = 1 / (1 + np.exp(4 * total_energy))      # normalization of the energy measurements
+        if deterministic: 
+            comparator =  np.full(len(pairs), 0.5) 
+        else: 
+            comparator = np.random.random(len(pairs))
+        swap = norm_eTot > comparator                   # large Etotal makes a small normalized value i.e., swap would increse map energy
+
+        df = update_df(pairs[swap], df)                     # exchanges the target locations bewteen the pair
+    return df, np.array(switch_residuals)
