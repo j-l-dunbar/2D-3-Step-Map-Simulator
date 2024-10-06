@@ -1,6 +1,6 @@
 
 import numpy as np
-import matplotlib.pyplot as plt
+from numba import njit
 
 """_summary_
     - This is going to accept the precalculated positions and reference everything according to the RCmap      
@@ -8,6 +8,25 @@ import matplotlib.pyplot as plt
 Returns:
     _type_: _description_
 """
+
+def main():
+    sample_sim = {
+    'axons': '',
+    'term_zones': '',
+    'EphA': '',
+    'EphB': '',
+    'efnA': '',
+    'efnB': '',
+    'source_positions': '',
+    'target_positions': '',
+    'alpha': '',
+    'beta': '',
+    'gamma': '',
+    'R': '',
+    'd': '',
+    }
+    
+    m = Mapper(**sample_sim)
 
 class Mapper:
     def __init__(self, axons, term_zones, EphA, EphB, efnA, efnB, source_positions, target_positions, alpha, beta, gamma, R, d):
@@ -167,7 +186,7 @@ def refine_map_iter(RCmap, n_repeats=2E4, deterministic=False, **sim_params) -> 
 
     switch_residuals = []
     for _ in range(int(n_repeats)):
-        pairs = random_pairs(Num)                           # makes a complete set of random pairs
+        pairs = random_pairs(RCmap.shape[0])                           # makes a complete set of random pairs
         total_energy = all_eTotal(pairs, df)                # calcs if eTotal sufficient for swap
         switch_residuals.append(total_energy[total_energy.argsort()[5:]].mean())         # tracking the progress of the mapping -- measures the mean of the 5 lowest energy pairs (better to swap than hold)
         
@@ -180,3 +199,7 @@ def refine_map_iter(RCmap, n_repeats=2E4, deterministic=False, **sim_params) -> 
 
         df = update_df(pairs[swap], df)                     # exchanges the target locations bewteen the pair
     return df, np.array(switch_residuals)
+
+
+if __name__ == '__main__':
+    main()
