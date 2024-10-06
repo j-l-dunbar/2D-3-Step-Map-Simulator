@@ -1,11 +1,11 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-
+from mapper import Mapper
 
 
 class Tissue:
-    def __init__(self, num_rows:int, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
+    def __init__(self, num_rows:int):
         self.name = ''
         x = np.arange(num_rows)
         xx = np.linspace(0,1,num_rows)
@@ -16,81 +16,104 @@ class Tissue:
 
         self.positions = np.array([y for x in self.grid_index.T for y in x]) # array of (x,y) indices
         
+        
+        self.isl2 = np.random.randint(0, 2, (num_rows, num_rows)) # 2D array of Isl2+ cells (technically only available in the retina)
+        
+    def set_gradients(self, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
         self.EphA = self.sum_grads(EphA, self.grid_fract[0])
         self.EphB = self.sum_grads(EphB, self.grid_fract[1])
         self.efnA = self.sum_grads(efnA, self.grid_fract[0])
         self.efnB = self.sum_grads(efnB, self.grid_fract[1])
-        
-        self.isl2 = np.random.randint(0, 2, (num_rows, num_rows)) # 2D array of Isl2+ cells (technically only available in the retina)
-        
 
-    def sum_grads(self, grads:dict, grid_pos): # TODO
-        """ take the individual concentration gradients and sum them into a combined gradient"""
-        if grads=={}:
-            return None
-        for k, v in grads.items():
-            pass # TODO look at old 1D code to do this. it should be exactly the same
+    def sum_grads(self, gradient_dict:dict, normalize=False)-> np.ndarray:
+        """ combines the individual gene in a family into a single gradient
+                all contributing to the whole
 
-        return LookupError("Function Not Implemented")
+        Returns:
+            np.ndarray: the summed gradients
+        """
+        summed = np.sum(np.array(list(gradient_dict.values())), axis=0)
+        summed[summed<0] = 0 # for hypothetical negative 'knockin' mutants
+
+        # if normalize:
+        #     # summed = (summed-summed.min())/(summed.max()-summed.min()) + 0.1
+        #     summed = self.normalize_grad(summed)
+        return summed
     
+    def normalize_grad(self, yy):
+        """_summary_
+
+        Args:
+            yy (ndarray): The values representing the summed Eph/ephrin gradient. 
+
+        Returns:
+            _type_: The array normalized to set the area under the curve to be 1.
+        """
+        x_spacing = 1/len(yy)
+        auc = np.trapz(yy, dx=x_spacing)
+        return yy/auc    
     
-ret_EphA = {}
-ret_EphB = {}
-ret_efnA = {}
-ret_efnB = {}
+retina = Tissue(100)
+x = retina.grid_fract
+Num = retina.positions.shape[0]
 
-retina = Tissue(100, ret_EphA, ret_EphB, ret_efnA, ret_efnB)
+# There's a problem with the gradients as inserted
+ret_EphBs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
+    'EphA4': 0.04 * np.exp(x[1]) + 0.939, 
+    'EphA5': 0.515 * np.exp(x[1]) + 0.1232, 
+    'EphA6': 0.572 * np.exp(x[1]) + 0.03
+}
 
-test_gradient = retina.grid_fract[0]**1.2 * retina.isl2
+ret_EphAs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
+    'EphA4': 0.04 * np.exp(x[0]) + 0.939 * retina.isl2, 
+    'EphA5': 0.515 * np.exp(x[0]) + 0.123, 
+    'EphA6': 0.572 * np.exp(x[0]) + 0.03
+}
 
-plt.imshow(test_gradient) # + retina.grid_fract[1]**1.5) # Messing around showing what superimposed gradients of A and Bs with Isl2 would look like
-# TODO need to figure out a good scheme for processing the mutants 
-#       - need to add a function to delete specific targets, both with Isl2, and constitutively
-#       - need to make a presentable array of 
-#           - the positions in the retina
-#           - the EphA&B in the retina
-#           - positions in the SC
-#           - the efnA & B in the SC
-#      This all needs to be processed in such a way that it is easy to reference for the refinement algo
-
-
-
-
-#%%
-
-
-col_grads = {}
-colliculus = Tissue(6,col_grads)
+ret_efnAs_dict = { # P0  Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
+    # 'efnA2': (-0.066 * np.exp( -x) +1.045) * 0.11, # only 11% of the efnA5 puncta were counted for efnA2
+    'efnA2': (-0.066 * np.exp( -x[0]) +1.045) * 0.11, 
+    'efnA3': (0.232 * np.exp(-x[0]) + 0.852)  * 0.22, 
+    'efnA5': (1.356 * np.exp(-x[0]) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
+}
 
 
+sc_efnAs_dict = {
+    # 'efnA5': -2.365*x**3 + 2.944*x**2 + 0.325*x + 0.454, # polynomial - should arguably use this over the exponential, as even the corrected efnA5 measurement has a fall-off at the posterior-most SC
+    'efnA5': 0.646 * np.exp(x[0]) - 0.106, # exponential
+    'efnA3': -0.052 * np.exp(x[0]) + 1.008, # exponential
+    'efnA2': -0.124*x**3 - 0.896*x**2 + 1.25*x + 0.708, # polynomial
+    # 'theoretical': (np.exp((np.arange(Num) - Num) / Num) - np.exp((-np.arange(Num) - Num) / Num))
+} # JD Measured
 
+cort_EphAs_dict = {
+    'theoretical': (np.exp((np.arange(Num) - Num) / Num) 
+                    - np.exp((-np.arange(Num) - Num) / Num))
+} # from Savier et al 2017
+
+retina.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnAs_dict)
+
+colliculus = Tissue(100)
 RCmap = np.random.permutation(colliculus.axons)
 RCmap[0]
 
 
 
-
-#%%
-length = retina.positions.shape[0]
-pairs = np.random.permutation(length).reshape(length//2, 2)
-
-pairs[0]
-
-
-for pair in pairs:
-    ax1, ax2 = pair
-    
-    ret1, ret2 = 'positions in the retina', '' # TODO need some fucntion that will take an axon's index and retun a numerical position in the retina
-    col1, col2 = 'positions in the colliculus', '' # TODO need some fucntion that will take an axon's index and retun a numerical position in the colliculus
-    
-    EphA1, EphA2 = 'function of position in retina', '' # TODO need some function that will get the relevant EphAs
-    efnA1, efnA2 = 'function of position in SC', '' # TODO same as above
-
-    EphB1, EphB2 = 'function of position in retina', ''  # TODO same as above
-    efnB1, efnB2 = 'function of position in SC', '' # TODO same as above
-
-# %%
-
+sim_params = {
+    'axons': retina.positions, 
+    'term_zones': colliculus.positions,
+    'EphA': retina.EphA,
+    'efnA': retina.efnA,
+    'alpha': 70,
+    'EphB': retina.EphB,
+    'efnB': retina.efnB.T,
+    'beta': 70,
+    'src_pos': retina.grid_fract,
+    'trg_pos': retina.grid_fract, 
+    'R': 0.1, 
+    'gamma': 10, 
+    'd': 0.3, 
+}
 
 
 def get_frac_pos(axon_list, target_df):
