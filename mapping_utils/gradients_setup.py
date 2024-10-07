@@ -10,7 +10,7 @@ start_time = datetime.now()
 
 
 
-Num = 400
+Num = 50
 retina = Tissue(Num)
 x = retina.grid_fract
 
@@ -90,7 +90,7 @@ df = make_map_df(np.random.permutation(Num**2), retina, colliculus)
 
 
 rc = Mapper(df, gamma=200, alpha=220, beta=220, R=0.11, d=0.03)
-refined_map = rc.refine_map(n_repeats=2E4)
+refined_map = rc.refine_map(n_repeats=2E3)
 
 print('Map Refined. Time Elapsed: {}'.format(datetime.now() - start_time))
 print(f'{refined_map.shape = }')
@@ -150,8 +150,6 @@ ax[3].set_title('Rety')
 # ax[1].set_title('')
 # # %%
 #%%
-from scipy.ndimage import gaussian_filter
-
 def source_injection(df, inject=[0.5,0.5]):
     
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1]))
@@ -185,6 +183,24 @@ def source_injection(df, inject=[0.5,0.5]):
     ax[1,1].imshow(trg_arr.T**0.001, cmap='turbo_r')
     fig.tight_layout()
     return fig
+#%%
+def source_injection2(df, inject=[0.5,0.5]):
+    injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing point
+    in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point (L2 Norm)
+    inj = in_range_src  
+    hash_map = refined_map[5].astype(int)
+
+    # how the injection would appear in the source
+    src_arr = np.zeros((Num,Num))
+    for c, i in zip(retina.positions, inj):
+        src_arr[*c] = i
+
+    # how the injection would appear in the target 
+    trg_arr = np.zeros((Num, Num))
+    for c, i in zip(colliculus.positions, inj[hash_map]):
+        trg_arr[*c] = i
+        
+    return src_arr.T**0.001#, trg_arr.T**0.001
 
 fig = source_injection(refined_map, [0.5,0.5])
 
@@ -194,3 +210,32 @@ print('Total Duration: {}'.format(end_time - start_time))
 
 
 # %%
+
+fig1 = source_injection(refined_map, [0.2,0.22])
+
+plt.show()
+# %%
+
+import matplotlib.cm as cm      
+from matplotlib.backend_bases import MouseButton
+
+fig = plt.imshow(source_injection2(refined_map, [0.5,0.5]), cm.gray_r)
+
+def onclick(event):
+    if event.button is MouseButton.LEFT:
+         inj = [event.xdata/Num, event.ydata/Num]
+    # clear frame
+    fig.set_data(source_injection2(refined_map, inj))
+    print(f'Clicked at: {inj}')
+
+
+plt.axis('off')
+fig.axes.get_xaxis().set_visible(False)
+fig.axes.get_yaxis().set_visible(False)
+
+plt.connect('button_press_event',onclick)
+
+
+plt.show()
+# %%
+
