@@ -4,10 +4,13 @@ import matplotlib.pyplot as plt
 from numba import njit
 from mapper import Mapper, Tissue
 
+from datetime import datetime
+start_time = datetime.now()
 
 
 
-Num = 100
+
+Num = 400
 retina = Tissue(Num)
 x = retina.grid_fract
 
@@ -19,7 +22,7 @@ ret_EphBs_dict = { # Adult Measurement - assumed exponential, curves estimated b
 }
 
 ret_EphAs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-    'EphA4': 0.04 * np.exp(x[0]) + 0.939 * (1* retina.isl2), 
+    'EphA4': 0.04 * np.exp(x[0]) + 0.939 * (retina.isl2), 
     'EphA5': 0.515 * np.exp(x[0]) + 0.123, 
     'EphA6': 0.572 * np.exp(x[0]) + 0.03
 }
@@ -55,6 +58,8 @@ retina.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_d
 
 colliculus = Tissue(Num)
 colliculus.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict)
+
+print('Gradients Set. Time Elapsed: {}'.format(datetime.now() - start_time))
 # RCmap = np.random.permutation(colliculus.positions.size[0])
 # RCmap[0]
 
@@ -84,8 +89,12 @@ df = make_map_df(np.random.permutation(Num**2), retina, colliculus)
 
 
 
-rc = Mapper(df, gamma=200, alpha=120, beta=120, R=0.11, d=0.03)
-refined_map = rc.refine_map(n_repeats=1E5)
+rc = Mapper(df, gamma=200, alpha=220, beta=220, R=0.11, d=0.03)
+refined_map = rc.refine_map(n_repeats=2E4)
+
+print('Map Refined. Time Elapsed: {}'.format(datetime.now() - start_time))
+print(f'{refined_map.shape = }')
+
 #%%
 # RCmap = refined_map[5]
 
@@ -103,7 +112,6 @@ refined_map = rc.refine_map(n_repeats=1E5)
 # refined_map = cc.refine_map()
 
 
-print(refined_map.shape)
 #%%
 fig, ax = plt.subplots(nrows=4, figsize=(5,20))
 ax[0].scatter(*refined_map[3:5], c=refined_map[9], cmap='turbo', s=4)
@@ -126,34 +134,46 @@ ax[3].scatter(*refined_map[8:], c=refined_map[4], cmap='turbo', s=4)
 ax[3].set_title('Rety')
 # %%
 
-fig, ax = plt.subplots(nrows=2, figsize=(5,10))
-ax[0].scatter(*refined_map[8:], c=refined_map[4], cmap='turbo_r', s=4)
-ax[0].set_title('SC per Rety')
-ax[1].scatter(*refined_map[3:5], c=refined_map[6], cmap='turbo', s=4)
-ax[1].set_title('Ret per efnA')
+# fig, ax = plt.subplots(nrows=2, figsize=(5,10))
+# ax[0].scatter(*refined_map[8:], c=refined_map[4], cmap='turbo_r', s=4)
+# ax[0].set_title('SC per Rety')
+# ax[1].scatter(*refined_map[3:5], c=refined_map[6], cmap='turbo', s=4)
+# ax[1].set_title('Ret per efnA')
 
-# id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]
-# 0,      1,           2,           3,               4,               5,     6,           7,           8,               9, 
-# %%
-injection_mask = np.logical_and(np.logical_and(refined_map[3]>0.40, refined_map[3]<0.50), np.logical_and(refined_map[4]>0.40, refined_map[4]<0.50))
-fig, ax = plt.subplots(nrows=2, figsize=(5,10))
-ax[0].scatter(*refined_map[3:5], c=injection_mask, cmap='turbo', s=7)
-ax[1].scatter(*refined_map[8:], c=injection_mask, cmap='turbo', s=7)
-ax[1].set_title('')
-# %%
-
+# # id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]
+# # 0,      1,           2,           3,               4,               5,     6,           7,           8,               9, 
+# # %%
+# injection_mask = np.logical_and(np.logical_and(refined_map[3]>0.40, refined_map[3]<0.50), np.logical_and(refined_map[4]>0.40, refined_map[4]<0.50))
+# fig, ax = plt.subplots(nrows=2, figsize=(5,10))
+# ax[0].scatter(*refined_map[3:5], c=injection_mask, cmap='turbo', s=7)
+# ax[1].scatter(*refined_map[8:], c=injection_mask, cmap='turbo', s=7)
+# ax[1].set_title('')
+# # %%
+#%%
+from scipy.ndimage import gaussian_filter
 
 def source_injection(df, inject=[0.5,0.5]):
-    in_range_src = np.linalg.norm(df[3:5] - np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[5])*inject[1])), axis=0)
+    
+    injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1]))
+    # how the injection would appear in the source
+    
+    
+    in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0)
+    inj = in_range_src
+    
+    # in_range_trg = np.linalg.norm(df[8:] - injection_arr, axis=0) # this needs to use the inverse map to work TODO
+    
+    # if site=='source': inj = in_range_src
+    # else: inj = in_range_trg
+    
+    
     src_arr = np.zeros((Num,Num))
-    for c, i in zip(retina.positions, in_range_src):
+    for c, i in zip(retina.positions, inj):
         src_arr[*c] = i
 
-
-
-    in_range_trg = np.linalg.norm(df[8:] - np.vstack((np.ones_like(df[8])*inject[0], np.ones_like(df[9])*inject[1])), axis=0)
+    # how the injection would appear in the target 
     trg_arr = np.zeros((Num, Num))
-    for c, i in zip(retina.positions, in_range_trg[refined_map[5].astype(int)]):
+    for c, i in zip(colliculus.positions, inj[refined_map[5].astype(int)]):
         trg_arr[*c] = i
         
     fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(10,10))
@@ -161,11 +181,16 @@ def source_injection(df, inject=[0.5,0.5]):
     ax[0,0].set_title('Retina')
     ax[0,1].imshow(trg_arr.T<0.05, cmap='turbo')
     ax[0,1].set_title('Superior Colliculus')
-    ax[1,0].imshow(src_arr.T**0.1, cmap='turbo_r')
-    ax[1,1].imshow(trg_arr.T**0.1, cmap='turbo_r')
+    ax[1,0].imshow(src_arr.T**0.001, cmap='turbo_r')
+    ax[1,1].imshow(trg_arr.T**0.001, cmap='turbo_r')
     fig.tight_layout()
     return fig
 
-fig = source_injection(df, [0.5,0.5])
-fig.show()
+fig = source_injection(refined_map, [0.5,0.5])
+
+
+end_time = datetime.now()
+print('Total Duration: {}'.format(end_time - start_time))
+
+
 # %%
