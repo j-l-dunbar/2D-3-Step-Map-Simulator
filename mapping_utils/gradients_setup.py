@@ -2,73 +2,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
-from mapper import Mapper, refine_map_iter
+from mapper import Mapper, Tissue
+
+
+
+
 Num = 100
-
-class Tissue:
-    def __init__(self, num_rows:int):
-        self.name = ''
-        x = np.arange(num_rows)
-        xx = np.linspace(0,1,num_rows)
-        
-        # two ways of representing the same data. Not sure which is the propper one 
-        self.grid_index = np.array(np.meshgrid(x,x)) # a 2D grid of indices for a grid of NxN neurons
-        self.grid_fract = np.array(np.meshgrid(xx, xx)) # a 2D grid of spatial coordinates from 0-1
-
-        self.positions = np.array([y for x in self.grid_index.T for y in x]) # array of (x,y) indices
-        
-        
-        self.isl2 = np.random.randint(0, 2, (num_rows, num_rows)) # 2D array of Isl2+ cells (technically only available in the retina)
-
-        
-    def set_gradients(self, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
-        self.EphA = self.sum_grads(EphA)
-        self.EphB = self.sum_grads(EphB)
-        self.efnA = self.sum_grads(efnA)
-        self.efnB = self.sum_grads(efnB)
-
-    def sum_grads(self, gradient_dict:dict)-> np.ndarray:
-        """ combines the individual gene in a family into a single gradient
-                all contributing to the whole
-
-        Returns:
-            np.ndarray: the summed gradients
-        """
-        return sum_grads_list(np.array(list(gradient_dict.values())))
-        
-        
-        
-        
-# @njit       
-def sum_grads_list(grad_list):
-    summed = grad_list[0]
-    for grad in grad_list[1:]:
-        summed+= grad
-    summed[summed<0] = 0 # for hypothetical negative 'knockin' mutants
-    summed = normalize_grad(summed) 
-    return summed
-
-@njit
-def normalize_grad(xy): # TODO this normalizing strategy doesn't work for the 2D gradients -- this needs to be coded differently -- normalizing the gradients before stretching them out could be a slution, but that would need come way to incorporate specific Isl2 insertions/deletions for specific members, after they have been summed and turned 2D
-    """_summary_
-
-    Args:
-        yy (ndarray): The values representing the summed Eph/ephrin gradient. 
-
-    Returns:
-        _type_: The array normalized to set the area under the curve to be 1.
-    """
-    # for i, yy in enumerate(xy): # this only works for 1D arrays... 
-    #     x_spacing = 1/yy.shape[0]
-    #     auc = np.trapz(yy, dx=x_spacing)
-    #     xy[i] = yy/auc  
-    # return xy  
-
-    return xy/np.median(xy)
-
-
 retina = Tissue(Num)
-
 x = retina.grid_fract
 
 # There's a problem with the gradients as inserted
@@ -79,7 +19,7 @@ ret_EphBs_dict = { # Adult Measurement - assumed exponential, curves estimated b
 }
 
 ret_EphAs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-    'EphA4': 0.04 * np.exp(x[0]) + 0.939, #* retina.isl2, 
+    'EphA4': 0.04 * np.exp(x[0]) + 0.939 * (1* retina.isl2), 
     'EphA5': 0.515 * np.exp(x[0]) + 0.123, 
     'EphA6': 0.572 * np.exp(x[0]) + 0.03
 }
@@ -110,7 +50,6 @@ cort_EphAs_dict = {
     'theoretical': (np.exp((np.arange(Num) - Num) / Num) 
                     - np.exp((-np.arange(Num) - Num) / Num))
 } # from Savier et al 2017
-#%%
 
 retina.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict)
 
@@ -119,10 +58,6 @@ colliculus.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efn
 # RCmap = np.random.permutation(colliculus.positions.size[0])
 # RCmap[0]
 
-#%%
-plt.imshow(retina.EphB)
-plt.show()
-plt.imshow(retina.EphA)
 
 
 def make_map_df(RCmap, retina, colliculus):
@@ -140,20 +75,97 @@ def make_map_df(RCmap, retina, colliculus):
     return np.vstack((id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]))
 
 df = make_map_df(np.random.permutation(Num**2), retina, colliculus)
-        
     
-plt.imshow(df)
+
+# id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]
+# 0,      1,           2,           3,               4,               5,     6,           7,           8,               9, 
+
 #%%
 
 
 
+rc = Mapper(df, gamma=200, alpha=120, beta=120, R=0.11, d=0.03)
+refined_map = rc.refine_map(n_repeats=1E5)
+#%%
+# RCmap = refined_map[5]
+
+# efnA_at_src = np.array([retina.efnA[*x] for x in retina.positions])
+# efnB_at_src = np.array([retina.efnB[*x] for x in retina.positions])
+# efnA_transp = efnA_at_src[RCmap.argsort()]
+# efnB_transp = efnB_at_src[RCmap.argsort()]
+
+# df2 = make_map_df(np.random.permutation(Num**2), retina, colliculus)
+
+# df2[6], df2[7] = efnA_transp[df2[5].astype(int)], efnB_transp[df2[5].astype(int)]
+
+# cc = Mapper(df2, gamma=200, alpha=120, beta=120, R=0.11, d=0.03)
+# #%%
+# refined_map = cc.refine_map()
+
+
+print(refined_map.shape)
+#%%
+fig, ax = plt.subplots(nrows=4, figsize=(5,20))
+ax[0].scatter(*refined_map[3:5], c=refined_map[9], cmap='turbo', s=4)
+ax[0].set_title('SCy')
+ax[1].scatter(*refined_map[3:5], c=refined_map[8], cmap='turbo', s=4)
+ax[1].set_title('SCx')
+ax[2].scatter(*refined_map[3:5], c=refined_map[7], cmap='turbo', s=4)
+ax[2].set_title('efnB')
+ax[3].scatter(*refined_map[3:5], c=refined_map[6], cmap='turbo', s=4)
+ax[3].set_title('efnA')
+#%%
+fig, ax = plt.subplots(nrows=4, figsize=(5,20))
+ax[0].scatter(*refined_map[8:], c=refined_map[1], cmap='turbo', s=4)
+ax[0].set_title('EphA')
+ax[1].scatter(*refined_map[8:], c=refined_map[2], cmap='turbo', s=4)
+ax[1].set_title('EphB')
+ax[2].scatter(*refined_map[8:], c=refined_map[3], cmap='turbo', s=4)
+ax[2].set_title('RetX')
+ax[3].scatter(*refined_map[8:], c=refined_map[4], cmap='turbo', s=4)
+ax[3].set_title('Rety')
+# %%
+
+fig, ax = plt.subplots(nrows=2, figsize=(5,10))
+ax[0].scatter(*refined_map[8:], c=refined_map[4], cmap='turbo_r', s=4)
+ax[0].set_title('SC per Rety')
+ax[1].scatter(*refined_map[3:5], c=refined_map[6], cmap='turbo', s=4)
+ax[1].set_title('Ret per efnA')
+
+# id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]
+# 0,      1,           2,           3,               4,               5,     6,           7,           8,               9, 
+# %%
+injection_mask = np.logical_and(np.logical_and(refined_map[3]>0.40, refined_map[3]<0.50), np.logical_and(refined_map[4]>0.40, refined_map[4]<0.50))
+fig, ax = plt.subplots(nrows=2, figsize=(5,10))
+ax[0].scatter(*refined_map[3:5], c=injection_mask, cmap='turbo', s=7)
+ax[1].scatter(*refined_map[8:], c=injection_mask, cmap='turbo', s=7)
+ax[1].set_title('')
+# %%
+
+
+def source_injection(df, inject=[0.5,0.5]):
+    in_range_src = np.linalg.norm(df[3:5] - np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[5])*inject[1])), axis=0)
+    src_arr = np.zeros((Num,Num))
+    for c, i in zip(retina.positions, in_range_src):
+        src_arr[*c] = i
 
 
 
+    in_range_trg = np.linalg.norm(df[8:] - np.vstack((np.ones_like(df[8])*inject[0], np.ones_like(df[9])*inject[1])), axis=0)
+    trg_arr = np.zeros((Num, Num))
+    for c, i in zip(retina.positions, in_range_trg[refined_map[5].astype(int)]):
+        trg_arr[*c] = i
+        
+    fig, ax = plt.subplots(ncols=2, nrows=2, figsize=(10,10))
+    ax[0,0].imshow(src_arr.T<0.05, cmap='turbo')
+    ax[0,0].set_title('Retina')
+    ax[0,1].imshow(trg_arr.T<0.05, cmap='turbo')
+    ax[0,1].set_title('Superior Colliculus')
+    ax[1,0].imshow(src_arr.T**0.1, cmap='turbo_r')
+    ax[1,1].imshow(trg_arr.T**0.1, cmap='turbo_r')
+    fig.tight_layout()
+    return fig
 
-
-m = Mapper(df)
-refined_map = m.refine_map()
-
-
-plt.imshow(refined_map)
+fig = source_injection(df, [0.5,0.5])
+fig.show()
+# %%

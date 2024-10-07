@@ -9,24 +9,86 @@ Returns:
     _type_: _description_
 """
 
+
+class Tissue:
+    def __init__(self, num_rows:int):
+        self.name = ''
+        x = np.arange(num_rows)
+        xx = np.linspace(0,1,num_rows)
+        
+        # two ways of representing the same data. Not sure which is the propper one 
+        self.grid_index = np.array(np.meshgrid(x,x)) # a 2D grid of indices for a grid of NxN neurons
+        self.grid_fract = np.array(np.meshgrid(xx, xx)) # a 2D grid of spatial coordinates from 0-1
+
+        self.positions = np.array([y for x in self.grid_index.T for y in x]) # array of (x,y) indices
+        
+        
+        self.isl2 = np.random.randint(0, 2, (num_rows, num_rows)) # 2D array of Isl2+ cells (technically only available in the retina)
+
+        
+    def set_gradients(self, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
+        if EphA!={}: self.EphA = self.sum_grads(EphA)
+        if EphB!={}: self.EphB = self.sum_grads(EphB)
+        if efnA!={}: self.efnA = self.sum_grads(efnA)
+        if efnB!={}: self.efnB = self.sum_grads(efnB)
+
+    def sum_grads(self, gradient_dict:dict)-> np.ndarray:
+        """ combines the individual gene in a family into a single gradient
+                all contributing to the whole
+
+        Returns:
+            np.ndarray: the summed gradients
+        """
+        return self.sum_grads_list(np.array(list(gradient_dict.values())))
+        
+    def sum_grads_list(self, grad_list):
+        summed = grad_list[0]
+        for grad in grad_list[1:]:
+            summed+= grad
+        summed[summed<0] = 0 # for hypothetical negative 'knockin' mutants
+        summed = self.normalize_grad(summed) 
+        return summed
+
+    def normalize_grad(self, xy): # TODO this normalizing strategy doesn't work for the 2D gradients -- this needs to be coded differently -- normalizing the gradients before stretching them out could be a slution, but that would need come way to incorporate specific Isl2 insertions/deletions for specific members, after they have been summed and turned 2D
+        """_summary_
+
+        Args:
+            yy (ndarray): The values representing the summed Eph/ephrin gradient. 
+
+        Returns:
+            _type_: The array normalized to set the area under the curve to be 1.
+        """
+        # for i, yy in enumerate(xy): # this only works for 1D arrays... 
+        #     x_spacing = 1/yy.shape[0]
+        #     auc = np.trapz(yy, dx=x_spacing)
+        #     xy[i] = yy/auc  
+        # return xy  
+
+        return xy/np.median(xy)
+
+
+
+
+
+
 class Mapper:
-    def __init__(self, df, alpha=70, beta=70, gamma=129, R=0.1, d=0.03):
+    def __init__(self, df, alpha=60, beta=60, gamma=120, R=1.11, d=0.03):
         """ This is going to take the relevant 2D arrays and use them to refine the map"""
         # 1 -- define the lookup tables to be referenced in the comparisson
         self.df = df
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
-        self.R = R
+        self.R = R 
         self.d = d
         
         
-    def refine_map(self) -> None:
+    def refine_map(self, n_repeats=2E4, deterministic=True) -> None:
         print('Refining map...')
-        df = refine_map_iter(self.df, self.alpha, self.beta, self.gamma, self.R, self.d)
+        df = refine_map_iter(self.df, self.alpha, self.beta, self.gamma, self.R, self.d, n_repeats=n_repeats, deterministic=deterministic)
         return df
 
-# @njit
+@njit
 def all_eTotal(pairs, df, alpha, beta, gamma, R, d) -> np.ndarray:
     """
     determines if a pair will be swaped stochastically, proportional to eTotal between the pair 
@@ -37,7 +99,7 @@ def all_eTotal(pairs, df, alpha, beta, gamma, R, d) -> np.ndarray:
     switch_array =  np.array([pair_eTot(pair, df, alpha, beta, gamma, R, d) for pair in pairs]) 
     return switch_array 
 
-# @njit
+@njit
 def pair_eTot(pair, df, alpha, beta, gamma, R, d) -> np.ndarray:
     """
     function of the chemical 'energy' and the distance in the source tissue (ret or V1) (representing activity) 
@@ -49,7 +111,7 @@ def pair_eTot(pair, df, alpha, beta, gamma, R, d) -> np.ndarray:
     return eChemA(ax1, ax2, df, alpha) - eChemB(ax1, ax2, df, beta) + eAct(ax1, ax2, df, R, gamma, d) # eTotal
 
 
-# @njit
+@njit
 def swap_pos_sc(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
     """
     the positions in the sc are swaped given their p-switch (proportional to eTotal)
@@ -58,11 +120,12 @@ def swap_pos_sc(pair : np.ndarray, df : np.ndarray) -> np.ndarray:
         np.ndarray: the updated map, with all pairs of axons that meet the threshold, swapped
     """
     ax1, ax2 = pair
-    df[ax1][5:], df[ax2][5:] = df[ax2][5:], df[ax1][5:]
+    for i in range(5,10):
+        df[i,ax1], df[i,ax2] = df[i,ax2], df[i,ax1]
 
     return df
 
-# @njit
+@njit
 def update_df(pairs, df) -> np.ndarray:
     """
     swaps the axons if sufficient p-switch
@@ -73,14 +136,14 @@ def update_df(pairs, df) -> np.ndarray:
         df = swap_pos_sc(pair, df)
     return df
 
-# @njit
+@njit
 def random_pairs(length) -> np.ndarray:
     """ make a set of random pairs for the eChme+eAct comparisson """
     if length%2:
         length -=1
     return np.random.permutation(length).reshape(length//2, 2)
 
-# @njit
+@njit
 def eChemA(ax1, ax2, df, alpha) ->  float:
     """
      function of the chemical 'strength' between the two positions as defined by the target efnA and source EphA 
@@ -95,7 +158,7 @@ def eChemA(ax1, ax2, df, alpha) ->  float:
     efnA_diff = df[6][ax2] - df[6][ax1] # df[6] is efnA
     return alpha * (ephA_diff) * (efnA_diff) 
 
-# @njit
+@njit
 def eChemB(ax1, ax2, df, beta) ->  float:
     """
      function of the chemical 'strength' between the two positions as defined by the target efnB and source EphB 
@@ -110,7 +173,7 @@ def eChemB(ax1, ax2, df, beta) ->  float:
     efnB_diff = df[7][ax2] - df[7][ax1] # df[7] is efnB
     return beta * (ephB_diff) * (efnB_diff) # TODO check this and change it to the correct formula for EphB signalling 
 
-# @njit
+@njit
 def eAct(ax1, ax2, df, R, gamma, d) ->  np.ndarray:
     """
     function of the distance between the axons in the target (SC) vs in the source tissue (ret or V1)
@@ -119,15 +182,15 @@ def eAct(ax1, ax2, df, R, gamma, d) ->  np.ndarray:
         np.ndarray: the difference in activity energy between all pairs of compared axons
     """
 
-    source_dist = np.linalg.norm(df[3:5][ax1] - df[3:5][ax2]) # df[3:5] are the retinal xy coordinates
+    source_dist = np.linalg.norm(df[3:5, ax1] - df[3:5, ax2]) # df[3:5] are the retinal xy coordinates
     cross_correlation = np.exp(-source_dist/R)              # Cij in Koulakov&Tsigankov 2006
     
-    sc_dist = np.linalg.norm(df[8:][ax1] - df[8:][ax2]) # r in Koulakov&Tsigankov 2006 -- df[8:] are the collicular xy coordinates
+    sc_dist = np.linalg.norm(df[8:, ax1] - df[8:, ax2]) # r in Koulakov&Tsigankov 2006 -- df[8:] are the collicular xy coordinates
     form_attract = np.exp(-(sc_dist**2) /(2*d**2))          # U in Koulakov&Tsigankov 2006 - overlap of dendritic arbors (Gaussian) -- 'd' is an experimental value [3%of the SC dimensions, see Methods, Eq. (2)]
     return -(gamma/2) * cross_correlation * form_attract
 
-# @njit
-def refine_map_iter(df, alpha, beta, gamma, R, d, n_repeats=2E2, deterministic=False) -> np.ndarray:
+@njit
+def refine_map_iter(df, alpha, beta, gamma, R, d, n_repeats=3E4, deterministic=True) -> np.ndarray:
     """
     refines the collicular map N times, iteratively 
 
@@ -152,8 +215,8 @@ def refine_map_iter(df, alpha, beta, gamma, R, d, n_repeats=2E2, deterministic=F
             comparator = np.random.random(len(pairs))
         swap = norm_eTot > comparator                   # large Etotal makes a small normalized value i.e., swap would increse map energy
 
-        RCmap = update_df(pairs[swap], df)                     # exchanges the target locations bewteen the pair
-    return RCmap
+        df = update_df(pairs[swap], df)                     # exchanges the target locations bewteen the pair
+    return df
 
 
 if __name__ == '__main__':
