@@ -2,12 +2,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
-from mapper import Mapper, Tissue
+from mapper import Mapper, Tissue, make_map_df
 
 from datetime import datetime
 start_time = datetime.now()
-
-
 
 
 Num = 250
@@ -65,19 +63,6 @@ print('Gradients Set. Time Elapsed: {}'.format(datetime.now() - start_time))
 
 
 
-def make_map_df(RCmap, retina, colliculus):
-    
-    id_src = np.arange(retina.positions.shape[0])
-    EphA_at_src = np.array([retina.EphA[*x] for x in retina.positions])
-    EphB_at_src = np.array([retina.EphB[*x] for x in retina.positions])
-    pos_at_src = np.array([retina.grid_fract.T[*x] for x in retina.positions])
-    
-    RCmap = RCmap
-    efnA_at_trg = np.array([colliculus.efnA[*x] for x in colliculus.positions[RCmap]])
-    efnB_at_trg = np.array([colliculus.efnB[*x] for x in colliculus.positions[RCmap]])
-    pos_at_trg = np.array([colliculus.grid_fract.T[*x] for x in colliculus.positions[RCmap]])
-    
-    return np.vstack((id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]))
 
 df = make_map_df(np.random.permutation(Num**2), retina, colliculus)
     
@@ -210,8 +195,7 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
     for c, i in zip(colliculus.positions, inj[hash_map]):
         trg_arr[*c] = i
         
-    return (src_arr.T - max_diff)**-0.1, (trg_arr.T-max_diff)**-0.1
-    return (src_arr.T)**0.2, (trg_arr.T)**0.2 
+    return (src_arr.T - max_diff)**-0.1, np.fliplr((trg_arr.T-max_diff)**-0.1)
 
 import matplotlib.cm as cm      
 from matplotlib.backend_bases import MouseButton
@@ -223,7 +207,8 @@ ax[0].imshow(src, cmap='Greys_r')
 ax[1].imshow(trg, cmap='Greys_r')
 
 def follow_cursor(event):
-    if event.inaxes:# is MouseButton.LEFT:
+    ''' glued to the cursor when on the map '''
+    if event.inaxes:
         inj = [event.xdata/Num, event.ydata/Num]
         ax[0].clear()
         ax[1].clear()
@@ -232,8 +217,14 @@ def follow_cursor(event):
         ax[1].imshow(trg, cmap='Greys_r')
         fig.canvas.draw()
 
+def on_click(event): 
+    ''' stop doing `binding_id` on left click '''
+    if event.button is MouseButton.LEFT:
+        plt.disconnect(binding_id)
+        
 plt.axis('off')
-plt.connect('motion_notify_event',follow_cursor)
+binding_id = plt.connect('motion_notify_event',follow_cursor)
+plt.connect('button_press_event', on_click)
 plt.show()
 # %%
 

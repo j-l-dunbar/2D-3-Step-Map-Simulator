@@ -67,7 +67,18 @@ class Tissue:
         return xy/np.median(xy)
 
 
-
+def make_map_df(hash_map, src_tissue, trg_tissue):
+    
+    id_src = np.arange(src_tissue.positions.shape[0])
+    EphA_at_src = np.array([src_tissue.EphA[*x] for x in src_tissue.positions])
+    EphB_at_src = np.array([src_tissue.EphB[*x] for x in src_tissue.positions])
+    pos_at_src = np.array([src_tissue.grid_fract.T[*x] for x in src_tissue.positions])
+    
+    efnA_at_trg = np.array([trg_tissue.efnA[*x] for x in trg_tissue.positions[hash_map]])
+    efnB_at_trg = np.array([trg_tissue.efnB[*x] for x in trg_tissue.positions[hash_map]])
+    pos_at_trg = np.array([trg_tissue.grid_fract.T[*x] for x in trg_tissue.positions[hash_map]])
+    
+    return np.vstack((id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], hash_map, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]))
 
 
 
