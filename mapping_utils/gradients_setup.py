@@ -193,7 +193,7 @@ print('Total Duration: {}'.format(end_time - start_time))
 # rc = Mapper(df, gamma=0, alpha=220, beta=220, R=0.11, d=0.01)
 # refined_map = rc.refine_map(n_repeats=1E1)
 
-def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.03):
+def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing point
     in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point (L2 Norm)
     # in_range_src[np.where(in_range_src>max_diff)] = 0
@@ -221,26 +221,21 @@ fig, ax = plt.subplots(ncols=2, figsize=(10,5))
 src, trg = si_src_trg_arrs(refined_map, [0.5,0.5])
 ax[0].imshow(src, cmap='Greys_r')
 ax[1].imshow(trg, cmap='Greys_r')
-def onclick(event):
-    if event.inaxes:# is MouseButton.LEFT:
-         inj = [event.xdata/Num, event.ydata/Num]
-    ax[0].clear()
-    ax[1].clear()
-    src, trg = si_src_trg_arrs(refined_map, inj)
-    ax[0].imshow(src, cmap='Greys_r')
-    ax[1].imshow(trg, cmap='Greys_r')
-    
-    # print(f'Clicked at: {inj}')
-    fig.canvas.draw()
 
+def follow_cursor(event):
+    if event.inaxes:# is MouseButton.LEFT:
+        inj = [event.xdata/Num, event.ydata/Num]
+        ax[0].clear()
+        ax[1].clear()
+        src, trg = si_src_trg_arrs(refined_map, inj)
+        ax[0].imshow(src, cmap='Greys_r')
+        ax[1].imshow(trg, cmap='Greys_r')
+        fig.canvas.draw()
 
 plt.axis('off')
-# fig.axes[1].get_xaxis().set_visible(False)
-# fig.axes[1].get_yaxis().set_visible(False)
-
-plt.connect('motion_notify_event',onclick)
-
-
+plt.connect('motion_notify_event',follow_cursor)
 plt.show()
 # %%
 
+
+# %%
