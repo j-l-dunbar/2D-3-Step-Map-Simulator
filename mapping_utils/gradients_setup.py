@@ -1,101 +1,58 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-from numba import njit
-from mapper import Mapper, Tissue, make_map_df
+from mapper import Mapper, Tissue
+
+import warnings
+warnings.filterwarnings('ignore')
 
 from datetime import datetime
 start_time = datetime.now()
 
-
+# Setting up gradients in the Retina, Superior Colliculus, and the Primary Visual Cortex
 Num = 250
-retina = Tissue(Num)
-x = retina.grid_fract
 
-# There's a problem with the gradients as inserted
-ret_EphBs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-    'EphA4': 0.04 * np.exp(x[1]) + 0.939, 
-    'EphA5': 0.515 * np.exp(x[1]) + 0.1232, 
-    'EphA6': 0.572 * np.exp(x[1]) + 0.03
-}
+retina = Tissue(Num, 'Retina')
+colliculus = Tissue(Num, 'SC')
+cortex = Tissue(Num, 'V1')
 
-ret_EphAs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-    'EphA4': 0.04 * np.exp(x[0]) + 0.939 * (3 - retina.isl2)/3, 
-    'EphA5': 0.515 * np.exp(x[0]) + 0.123, 
-    'EphA6': 0.572 * np.exp(x[0]) + 0.03
-}
+ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, sc_efnAs_dict, sc_efnBs_dict, cort_EphAs_dict, cort_EphBs_dict = retina.make_std_grads()
+ret_EphAs_dict['EphA4'] *= retina.isl2 *2
 
-ret_efnBs_dict = { # P0  Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-    # 'efnA2': (-0.066 * np.exp( -x) +1.045) * 0.11, # only 11% of the efnA5 puncta were counted for efnA2
-    'efnA2': (-0.066 * np.exp( -x[1]) +1.045) * 0.11, 
-    'efnA3': (0.232 * np.exp(-x[1]) + 0.852)  * 0.22, 
-    'efnA5': (1.356 * np.exp(-x[1]) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
-}
-
-ret_efnAs_dict = { # P0  Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-    # 'efnA2': (-0.066 * np.exp( -x) +1.045) * 0.11, # only 11% of the efnA5 puncta were counted for efnA2
-    'efnA2': (0.066 * np.exp( -x[0]) +1.045) * 0.11, 
-    'efnA3': (0.232 * np.exp(-x[0]) + 0.852)  * 0.22, 
-    'efnA5': (1.356 * np.exp(-x[0]) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
-}
-
-sc_efnAs_dict = {
-    # 'efnA5': -2.365*x**3 + 2.944*x**2 + 0.325*x + 0.454, # polynomial - should arguably use this over the exponential, as even the corrected efnA5 measurement has a fall-off at the posterior-most SC
-    'efnA5': 0.646 * np.exp(x[1]) - 0.106, # exponential
-    'efnA3': -0.052 * np.exp(x[1]) + 1.008, # exponential
-    'efnA2': -0.124*x[1]**3 - 0.896*x[1]**2 + 1.25*x[1] + 0.708, # polynomial
-    # 'theoretical': (np.exp((np.arange(Num) - Num) / Num) - np.exp((-np.arange(Num) - Num) / Num))
-} # JD Measured
-
-cort_EphAs_dict = {
-    'theoretical': (np.exp((np.arange(Num) - Num) / Num) 
-                    - np.exp((-np.arange(Num) - Num) / Num))
-} # from Savier et al 2017
-
-retina.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict)
-
-colliculus = Tissue(Num)
-colliculus.set_gradients(ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict)
-
-print('Gradients Set. Time Elapsed: {}'.format(datetime.now() - start_time))
-# RCmap = np.random.permutation(colliculus.positions.size[0])
-# RCmap[0]
-
-
-
-
-df = make_map_df(np.random.permutation(Num**2), retina, colliculus)
-    
-
-# id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]
-# 0,      1,           2,           3,               4,               5,     6,           7,           8,               9, 
+# Establish the gradients to be used for mapping
+retina.set_gradients(EphA=ret_EphAs_dict, EphB=ret_EphBs_dict, efnA=ret_efnAs_dict, efnB=ret_efnBs_dict)
 
 #%%
 
+colliculus.set_gradients(efnA=sc_efnAs_dict, efnB=sc_efnBs_dict)
+cortex.set_gradients(EphA=cort_EphAs_dict, EphB=cort_EphBs_dict) 
+
+# Set up the Retino-Collicular Map 
+rc = Mapper(gamma=200, alpha=220, beta=220, R=0.11, d=0.0001)
+random_RCmap = rc.init_random_map(Num)
+rc.make_map_df(random_RCmap, retina, colliculus)
+
+# Refine the Retino-Collicular Map
+rc.df = rc.refine_map(n_repeats=1E3).copy() # Dataframe representing the refined Retino-Collicular Map, from the "perspective" of the RGCs
+print('Map Refined: {}'.format(datetime.now() - start_time))
+
+# # Set Up the Cortico-Collicular Map
+# cc = Mapper(gamma=200, alpha=220, beta=220, R=0.11, d=0.001)
+# random_CCmap = cc.init_random_map(Num) # hash representing random connections between the source and target
+
+# # Transpose the Retina Ephrins to the SC
+# RCmap_hash = rc.df[5].astype(int) # a hashmap that represents the Bijective Connections between the Retina and the SC
+# CCmap_hash = random_CCmap
 
 
-rc = Mapper(df, gamma=200, alpha=220, beta=220, R=0.11, d=0.001)
-refined_map = rc.refine_map(n_repeats=1E3)
+# cc.make_map_df(random_CCmap, cortex, colliculus)
+# ret_efns = np.array([[retina.efnA[*xy], retina.efnB[*xy]] for xy in retina.positions])
+# transposed_efns = ret_efns[RCmap_hash.argsort()].T # efnA and efnB sorted to represent their transposition into the 'target' SC
 
-print('Map Refined. Time Elapsed: {}'.format(datetime.now() - start_time))
-print(f'{refined_map.shape = }')
+# cc.df[6], cc.df[7] = transposed_efns[0][CCmap_hash], transposed_efns[1][CCmap_hash]
 
-#%%
-# RCmap = refined_map[5]
+# df_CC = cc.refine_map(n_repeats=1E3).copy()
 
-# efnA_at_src = np.array([retina.efnA[*x] for x in retina.positions])
-# efnB_at_src = np.array([retina.efnB[*x] for x in retina.positions])
-# efnA_transp = efnA_at_src[RCmap.argsort()]
-# efnB_transp = efnB_at_src[RCmap.argsort()]
-
-# df2 = make_map_df(np.random.permutation(Num**2), retina, colliculus)
-
-# df2[6], df2[7] = efnA_transp[df2[5].astype(int)], efnB_transp[df2[5].astype(int)]
-
-# cc = Mapper(df2, gamma=200, alpha=120, beta=120, R=0.11, d=0.03)
-# #%%
-# refined_map = cc.refine_map()
-""""""
 
 #%%
 # fig, ax = plt.subplots(nrows=4, ncols=2, figsize=(10,20))
@@ -176,14 +133,17 @@ print('Total Duration: {}'.format(end_time - start_time))
 # %%
 # df = refined_map.copy()
 # rc = Mapper(df, gamma=0, alpha=220, beta=220, R=0.11, d=0.01)
-# refined_map = rc.refine_map(n_repeats=1E1)
+
+
+
+refined_map = rc.df
 
 def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing point
     in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point (L2 Norm)
     # in_range_src[np.where(in_range_src>max_diff)] = 0
     inj = in_range_src  
-    hash_map = refined_map[5].astype(int)
+    hash_map = rc.df[5].astype(int)
 
     # how the injection would appear in the source
     src_arr = np.zeros((Num,Num))
@@ -194,17 +154,17 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
     trg_arr = np.zeros((Num, Num))
     for c, i in zip(colliculus.positions, inj[hash_map]):
         trg_arr[*c] = i
-        
-    return (src_arr.T - max_diff)**-0.1, np.fliplr((trg_arr.T-max_diff)**-0.1)
-
+    src = np.nan_to_num((src_arr.T - max_diff)**-0.1)    
+    trg = np.nan_to_num((trg_arr.T - max_diff)**-0.1)    
+    src = src/src.max()*255
+    trg = trg/trg.max()*255
+    src = np.tile(src, [3,1,1]).T.astype(int)
+    trg = np.tile(trg, [3,1,1]).T.astype(int)
+    return src, trg
+#%%
 import matplotlib.cm as cm      
 from matplotlib.backend_bases import MouseButton
 
-fig, ax = plt.subplots(ncols=2, figsize=(10,5))
-
-src, trg = si_src_trg_arrs(refined_map, [0.5,0.5])
-ax[0].imshow(src, cmap='Greys_r')
-ax[1].imshow(trg, cmap='Greys_r')
 
 def follow_cursor(event):
     ''' glued to the cursor when on the map '''
@@ -213,14 +173,34 @@ def follow_cursor(event):
         ax[0].clear()
         ax[1].clear()
         src, trg = si_src_trg_arrs(refined_map, inj)
-        ax[0].imshow(src, cmap='Greys_r')
-        ax[1].imshow(trg, cmap='Greys_r')
+        ax[0].imshow(src + trunc, cmap='Greys_r') 
+        ax[1].imshow(trg + warped, cmap='Greys_r')
         fig.canvas.draw()
-
 def on_click(event): 
     ''' stop doing `binding_id` on left click '''
     if event.button is MouseButton.LEFT:
         plt.disconnect(binding_id)
+
+
+im = plt.imread('../Color-Wheel.jpg')
+imw = im.copy()
+trunc = imw[450:450+Num, 450:450+Num]
+
+trunc = np.array(trunc.astype(int)) # TODO -- there's a problem around here where the image is being displayed really weird *************
+
+warped = np.zeros([250,250,3])
+for src, trg in zip(retina.positions[rc.df[5].argsort().astype(int)], colliculus.positions):
+    warped[*trg] = trunc[*src].astype(int)
+
+fig, ax = plt.subplots(ncols=2, figsize=(10,5))
+
+src, trg = si_src_trg_arrs(refined_map, [0.5,0.5])
+
+print(f'{src.shape = }')
+print(f'{trg.shape = }')
+ax[0].imshow(src+trunc, cmap='Greys_r')
+ax[1].imshow(trg+warped, cmap='Greys_r')
+
         
 plt.axis('off')
 binding_id = plt.connect('motion_notify_event',follow_cursor)
@@ -228,5 +208,6 @@ plt.connect('button_press_event', on_click)
 plt.show()
 # %%
 
+# plt.imshow(warped.astype(int))
 
 # %%

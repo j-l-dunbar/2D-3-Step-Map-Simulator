@@ -11,8 +11,10 @@ Returns:
 
 
 class Tissue:
-    def __init__(self, num_rows:int):
-        self.name = ''
+    def __init__(self, num_rows:int, name=None):
+        self.name = name
+        self.Num = num_rows
+        
         x = np.arange(num_rows)
         xx = np.linspace(0,1,num_rows)
         
@@ -45,16 +47,14 @@ class Tissue:
         summed = grad_list[0]
         for grad in grad_list[1:]:
             summed+= grad
-        summed[summed<0] = 0 # for hypothetical negative 'knockin' mutants
+        summed[summed<0] = 0 # to accound for hypothetical negative 'knockin' mutants (knockdown?)
         summed = self.normalize_grad(summed) 
         return summed
 
     def normalize_grad(self, xy): # TODO this normalizing strategy doesn't work for the 2D gradients -- this needs to be coded differently -- normalizing the gradients before stretching them out could be a slution, but that would need come way to incorporate specific Isl2 insertions/deletions for specific members, after they have been summed and turned 2D
         """_summary_
-
         Args:
             yy (ndarray): The values representing the summed Eph/ephrin gradient. 
-
         Returns:
             _type_: The array normalized to set the area under the curve to be 1.
         """
@@ -66,33 +66,94 @@ class Tissue:
 
         return xy/np.median(xy)
 
-
-def make_map_df(hash_map, src_tissue, trg_tissue):
+    def make_std_grads(self):
+        x= self.grid_fract
+        # There's a problem with the gradients as inserted
+        ret_EphAs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
+            'EphA4': 0.04 * np.exp(x[1]) + 0.939 , 
+            'EphA5': 0.515 * np.exp(x[1]) + 0.1232, 
+            'EphA6': 0.572 * np.exp(x[1]) + 0.03
+        }
+        ret_efnAs_dict = { # P0  Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
+            'efnA2': (0.066 * np.exp( -x[1]) +1.045) * 0.11, 
+            'efnA3': (0.232 * np.exp(-x[1]) + 0.852)  * 0.22, 
+            'efnA5': (1.356 * np.exp(-x[1]) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
+        }
+        ret_EphBs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
+            'EphBa': 0.04 * np.exp(x[0]) + 0.939 , 
+            'EphBb': 0.515 * np.exp(x[0]) + 0.123, 
+            'EphBc': 0.572 * np.exp(x[0]) + 0.03
+        }
+        ret_efnBs_dict = { # P0  Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
+            'efnBa': (-0.066 * np.exp( -x[0]) +1.045) * 0.11, 
+            'efnBb': (0.232 * np.exp(-x[0]) + 0.852)  * 0.22, 
+            'efnBc': (1.356 * np.exp(-x[0]) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
+        }
+        sc_efnAs_dict = {
+            # 'efnA5': -2.365*x**3 + 2.944*x**2 + 0.325*x + 0.454, # polynomial - should arguably use this over the exponential, as even the corrected efnA5 measurement has a fall-off at the posterior-most SC
+            'efnA5': 0.646 * np.exp(x[1]) - 0.106, # exponential
+            'efnA3': -0.052 * np.exp(x[1]) + 1.008, # exponential
+            'efnA2': -0.124*x[1]**3 - 0.896*x[1]**2 + 1.25*x[1] + 0.708, # polynomial
+        } # JD Measured
+        
+        sc_efnBs_dict = {
+            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+                            - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
+        }
+        cort_EphAs_dict = {
+            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+                            - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1]).T
+        } # from Savier et al 2017
+        cort_EphBs_dict = {
+            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+                            - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
+        } # from Savier et al 2017
+        
+        return ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, sc_efnAs_dict, sc_efnBs_dict, cort_EphAs_dict, cort_EphBs_dict
     
-    id_src = np.arange(src_tissue.positions.shape[0])
-    EphA_at_src = np.array([src_tissue.EphA[*x] for x in src_tissue.positions])
-    EphB_at_src = np.array([src_tissue.EphB[*x] for x in src_tissue.positions])
-    pos_at_src = np.array([src_tissue.grid_fract.T[*x] for x in src_tissue.positions])
-    
-    efnA_at_trg = np.array([trg_tissue.efnA[*x] for x in trg_tissue.positions[hash_map]])
-    efnB_at_trg = np.array([trg_tissue.efnB[*x] for x in trg_tissue.positions[hash_map]])
-    pos_at_trg = np.array([trg_tissue.grid_fract.T[*x] for x in trg_tissue.positions[hash_map]])
-    
-    return np.vstack((id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], hash_map, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]))
-
 
 
 class Mapper:
-    def __init__(self, df, alpha=60, beta=60, gamma=120, R=0.11, d=0.03):
-        """ This is going to take the relevant 2D arrays and use them to refine the map"""
-        # 1 -- define the lookup tables to be referenced in the comparisson
-        self.df = df
+    def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03):
+        """ sets up the params for map refinement before """
+        # 1 -- define the mapping params
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
         self.R = R 
-        self.d = d
+        self.d = d        
         
+    def init_random_map(self, Num):
+        return np.random.permutation(Num**2)
+    
+    def make_map_df(self, hash_map, src_tissue, trg_tissue):    
+        ''' takes the various arrays and combines them into a single dataframe for Numba to opperate on efficiently 
+                - the abstraction of doing it this way is worth if for the speed that is gained
+        '''
+        df_index = {
+        'id_src': 0, # index column 
+        'EphA_at_src': 1, # [EphA] this axons carrie
+        'EphB_at_src': 2, # [EphB] this axons carries
+        'pos_at_src.T[0]': 3, # source X (decimal)
+        'pos_at_src.T[1]': 4, # source Y (decimal)
+        'RCmap': 5, # how this axons connects to the SC
+        'efnA_at_trg': 6, # [efnA] that this axons sees
+        'efnB_at_trg': 7, # [efnB] that this axons sees
+        'pos_at_trg.T[0]': 8, # target X
+        'pos_at_trg.T[1]': 9, # target Y
+        }
+        
+        id_src = np.arange(src_tissue.positions.shape[0])
+        EphA_at_src = np.array([src_tissue.EphA[*x] for x in src_tissue.positions])
+        EphB_at_src = np.array([src_tissue.EphB[*x] for x in src_tissue.positions])
+        pos_at_src = np.array([src_tissue.grid_fract.T[*x] for x in src_tissue.positions])
+        
+        efnA_at_trg = np.array([trg_tissue.efnA[*x] for x in trg_tissue.positions[hash_map]])
+        efnB_at_trg = np.array([trg_tissue.efnB[*x] for x in trg_tissue.positions[hash_map]])
+        pos_at_trg = np.array([trg_tissue.grid_fract.T[*x] for x in trg_tissue.positions[hash_map]])
+        
+        self.df = np.vstack((id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], hash_map, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]))
+        return self.df
         
     def refine_map(self, n_repeats=2E4, deterministic=True) -> None:
         print('Refining map...')
