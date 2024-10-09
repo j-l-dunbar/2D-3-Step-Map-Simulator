@@ -1,6 +1,7 @@
 
 import numpy as np
 from numba import njit
+import matplotlib.pyplot as plt
 
 """_summary_
     - This is going to accept the precalculated positions and reference everything according to the RCmap      
@@ -66,51 +67,106 @@ class Tissue:
 
         return xy/np.median(xy)
 
-    def make_std_grads(self):
+    def make_std_grads(self, EphA_angle=90, EphB_angle=0, efnA_angle=270, efnB_angle=180):
         x= self.grid_fract
+
+        EphA_comps = np.cos(EphA_angle*np.pi/180)*x[1] + np.sin(EphA_angle*np.pi/180)*x[0]
+        EphB_comps = np.cos(EphB_angle*np.pi/180)*x[1] + np.sin(EphB_angle*np.pi/180)*x[0]
+        efnA_comps = np.cos(efnA_angle*np.pi/180)*x[1] + np.sin(efnA_angle*np.pi/180)*x[0]
+        efnB_comps = np.cos(efnB_angle*np.pi/180)*x[1] + np.sin(efnB_angle*np.pi/180)*x[0]
+
         # There's a problem with the gradients as inserted
         ret_EphAs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-            'EphA4': 0.04 * np.exp(x[1]) + 0.939 , 
-            'EphA5': 0.515 * np.exp(x[1]) + 0.1232, 
-            'EphA6': 0.572 * np.exp(x[1]) + 0.03
+            'EphA4': 0.040 * np.exp(EphA_comps) + 0.939 , 
+            'EphA5': 0.515 * np.exp(EphA_comps) + 0.1232, 
+            'EphA6': 0.572 * np.exp(EphA_comps) + 0.03
         }
         ret_efnAs_dict = { # P0  Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-            'efnA2': (0.066 * np.exp( -x[1]) +1.045) * 0.11, 
-            'efnA3': (0.232 * np.exp(-x[1]) + 0.852)  * 0.22, 
-            'efnA5': (1.356 * np.exp(-x[1]) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
+            'efnA2': (0.066 * np.exp(efnA_comps) + 1.045) * 0.11, 
+            'efnA3': (0.232 * np.exp(efnA_comps) + 0.852) * 0.22, 
+            'efnA5': (1.356 * np.exp(efnA_comps) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
         }
+        
         ret_EphBs_dict = { # Adult Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-            'EphBa': 0.04 * np.exp(x[0]) + 0.939 , 
-            'EphBb': 0.515 * np.exp(x[0]) + 0.123, 
-            'EphBc': 0.572 * np.exp(x[0]) + 0.03
+            'EphBa': 0.040 * np.exp(EphB_comps) + 0.939 , 
+            'EphBb': 0.515 * np.exp(EphB_comps) + 0.123, 
+            'EphBc': 0.572 * np.exp(EphB_comps) + 0.03
         }
         ret_efnBs_dict = { # P0  Measurement - assumed exponential, curves estimated by kernel densities with a bandwidth of 0.1
-            'efnBa': (-0.066 * np.exp( -x[0]) +1.045) * 0.11, 
-            'efnBb': (0.232 * np.exp(-x[0]) + 0.852)  * 0.22, 
-            'efnBc': (1.356 * np.exp(-x[0]) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
+            'efnBa': (-0.066 * np.exp(efnB_comps) +1.045) * 0.11, 
+            'efnBb': ( 0.232 * np.exp(efnB_comps) + 0.852)  * 0.22, 
+            'efnBc': ( 1.356 * np.exp(efnB_comps) + 0.147) * 0.5,  # some guesses as to the final contribution to the summed ephrin gradients
         }
         sc_efnAs_dict = {
             # 'efnA5': -2.365*x**3 + 2.944*x**2 + 0.325*x + 0.454, # polynomial - should arguably use this over the exponential, as even the corrected efnA5 measurement has a fall-off at the posterior-most SC
-            'efnA5': 0.646 * np.exp(x[1]) - 0.106, # exponential
-            'efnA3': -0.052 * np.exp(x[1]) + 1.008, # exponential
-            'efnA2': -0.124*x[1]**3 - 0.896*x[1]**2 + 1.25*x[1] + 0.708, # polynomial
+            'efnA5': 0.646 * np.exp(efnA_comps) - 0.106, # exponential
+            'efnA3': -0.052 * np.exp(efnA_comps) + 1.008, # exponential
+            'efnA2': -0.124*(efnA_comps)**3 - 0.896*(efnA_comps)**2 + 1.25*(efnA_comps) + 0.708, # polynomial
         } # JD Measured
         
         sc_efnBs_dict = {
-            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+            'theoretical': 1 - np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
                             - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
         }
         cort_EphAs_dict = {
             'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
-                            - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1]).T
+                            - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
         } # from Savier et al 2017
         cort_EphBs_dict = {
-            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
-                            - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
+            'theoretical': 1 - np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+                            - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1]).T
         } # from Savier et al 2017
         
         return ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, sc_efnAs_dict, sc_efnBs_dict, cort_EphAs_dict, cort_EphBs_dict
     
+
+def show_grads(rc, cc, retina, colliculus, cortex):
+    fig, axes = plt.subplots(ncols=2, nrows=4, figsize=(5,8))
+    axs = axes.flat
+    axs[0].imshow(retina.EphA, cmap='Blues', origin='lower')
+    axs[0].set_title('retina.EphA')
+    axs[0].set_xlabel(rc.source_x)
+    axs[0].set_ylabel(rc.source_y)
+
+    axs[1].imshow(retina.EphB, cmap='Reds', origin='lower')
+    axs[1].set_title('retina.EphB')
+    axs[1].set_xlabel(rc.source_x)
+    axs[1].set_ylabel(rc.source_y)
+
+    axs[2].imshow(retina.efnA, cmap='Blues', origin='lower')
+    axs[2].set_title('retina.efnA')
+    axs[2].set_xlabel(rc.source_x)
+    axs[2].set_ylabel(rc.source_y)
+    
+    axs[3].imshow(retina.efnB, cmap='Reds', origin='lower')
+    axs[3].set_title('retina.efnB')
+    axs[3].set_xlabel(rc.source_x)
+    axs[3].set_ylabel(rc.source_y)
+    
+    axs[4].imshow(colliculus.efnA, cmap='Blues', origin='lower')
+    axs[4].set_title('colliculus.efnA')
+    axs[4].set_xlabel(rc.target_x)
+    axs[4].set_ylabel(rc.target_y)
+
+    axs[5].imshow(colliculus.efnB, cmap='Reds', origin='lower')
+    axs[5].set_title('colliculus.efnB')
+    axs[5].set_xlabel(rc.target_x)
+    axs[5].set_ylabel(rc.target_y)
+
+    axs[6].imshow(cortex.EphA, cmap='Blues', origin='lower')
+    axs[6].set_title('cortex.EphA')
+    axs[6].set_xlabel(cc.source_x)
+    axs[6].set_ylabel(cc.source_y)
+
+    axs[7].imshow(cortex.EphB, cmap='Reds', origin='lower')
+    axs[7].set_title('cortex.EphB')
+    axs[7].set_xlabel(cc.source_x)
+    axs[7].set_ylabel(cc.source_y)
+
+    fig.tight_layout()
+    return fig
+
+
 
 
 class Mapper:
