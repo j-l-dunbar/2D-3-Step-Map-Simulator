@@ -29,9 +29,8 @@ retinal_gradients = retina.make_std_grads() # can can the axis along which the g
 
 
 ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, _, _, _, _ = retinal_gradients
-# ret_EphAs_dict['EphA4'] *= retina.isl2 *2 # defining a mutant
-ret_efnAs_dict['efnA2'] *= retina.isl2 # defining a mutant
-
+ret_EphAs_dict['EphA4'] *= retina.isl2 # defining a mutant
+# ret_efnAs_dict['efnA2'] *= retina.isl2 # defining a mutant
 
 # Establish the axon concentrations of Eph and efn to be used for mapping
 retina.set_gradients(EphA=ret_EphAs_dict, EphB=ret_EphBs_dict, efnA=ret_efnAs_dict, efnB=ret_efnBs_dict)
@@ -63,7 +62,7 @@ cc.name = "Cortico-Colliculuar Map"
 cc.source_name = 'Cortex'
 cc.target_name = 'Colliculus'
 cc.source_x, cc.source_y = 'Lateral-Medial', 'Anterior-Posterior'
-cc.target_x, cc.target_y = 'Anterior-Posterior', 'Medial-Lateral'
+cc.target_y, cc.target_x = 'Anterior-Posterior', 'Medial-Lateral'
 random_CCmap = cc.init_random_map(Num) # hash representing random connections between the source and target
 cc.make_map_df(random_CCmap, cortex, colliculus)
 
@@ -121,7 +120,7 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
     trg = trg_arr**0.1 *5
     
     # makes the spots bright instead of dark
-    src = (1 - (src/src.max()) * src_mask) 
+    src = (1 - (src/src.max()) * src_mask)
     trg = (1 - (trg/trg.max()) * trg_mask)
     trg = trg[::-1,::-1].T ################################ --- look out for this wild flip. It gets everything aligned nicely, but it really messes with the axes
     return src, trg
@@ -130,7 +129,7 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
 def tri_injection(df, center, r=0.11):
     src0, trg0 = si_src_trg_arrs(df, [center[0] - r, center[1] - r])
     src1, trg1 = si_src_trg_arrs(df, [center[0] + r, center[1] - r])
-    src2, trg2 = si_src_trg_arrs(df, [center[0],center[1] + 0.66*r])
+    src2, trg2 = si_src_trg_arrs(df, [center[0]    , center[1] + 0.66*r])
     src0 += src2 *0.88
     src1 += src2 *0.88
     trg0 += trg2 *0.88
@@ -138,6 +137,7 @@ def tri_injection(df, center, r=0.11):
 
     src =  np.array((src0, src1, src2)).T
     trg =  np.array((trg0, trg1, trg2)).T
+    
     return src/src.max(), trg/trg.max()
 
 
@@ -148,10 +148,15 @@ def follow_cursor(event):
         inj = [event.xdata/Num, event.ydata/Num]
         ax[0].clear()
         ax[1].clear()
-        src, trg = tri_injection(refined_map, inj) # makes three points that represent multiple injections
+        
+        src_rc, trg_rc = tri_injection(rc.df, inj)
+        src_cc, trg_cc = tri_injection(cc.df, inj)
+
         # src, trg = si_src_trg_arrs(refined_map, inj)
-        ax[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-        ax[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+        ax[0].imshow(src_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+        ax[1].imshow(trg_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+        ax[2].imshow(src_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+        ax[3].imshow(trg_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
         fig.canvas.draw()
         
 def on_click(event): 
@@ -160,34 +165,44 @@ def on_click(event):
         # plt.disconnect(binding_id)
         pass
 
-
-for map in [rc, cc]:
     
-    refined_map = map.df
 
-    fig, ax = plt.subplots(ncols=2, figsize=(10,5))
-    default_inject = [0.5,0.5]
+fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(10,10))
+ax = axes.flat
+default_inject = [0.5,0.5]
 
-    src, trg = tri_injection(refined_map, default_inject)
+src_rc, trg_rc = tri_injection(rc.df, default_inject)
+src_cc, trg_cc = tri_injection(cc.df, default_inject)
 
-    ax[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-    ax[0].set_title(map.source_name)
-    ax[0].set_xlabel(map.source_x)
-    ax[0].set_ylabel(map.source_y)
-    
-    ax[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-    ax[1].set_title(map.target_name)
-    ax[0].set_xlabel(map.target_x)
-    ax[0].set_ylabel(map.target_y)   
-    
-    fig.suptitle(map.name)
-            
-    ax[0].axis('off')
-    ax[1].axis('off')
+ax[0].imshow(src_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+ax[0].set_title(rc.source_name)
+ax[0].set_xlabel(rc.source_y)
+ax[0].set_ylabel(rc.source_x)
 
-    binding_id = plt.connect('motion_notify_event',follow_cursor)
-    plt.connect('button_press_event', on_click)
-    plt.show()
+ax[1].imshow(trg_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+ax[1].set_title(rc.target_name)
+ax[1].set_xlabel(rc.target_x)
+ax[1].set_ylabel(rc.target_y)   
+
+ax[2].imshow(src_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+ax[2].set_title(cc.source_name)
+ax[2].set_xlabel(cc.source_y)
+ax[2].set_ylabel(cc.source_x)
+
+ax[3].imshow(trg_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+ax[3].set_title(cc.target_name)
+ax[3].set_xlabel(cc.target_x)
+ax[3].set_ylabel(cc.target_y)   
+
+
+fig.suptitle('Anterograde Injections')
+        
+# ax[0].axis('off')
+# ax[1].axis('off')
+
+binding_id = plt.connect('motion_notify_event',follow_cursor)
+plt.connect('button_press_event', on_click)
+plt.show()
 # %%
 
 
