@@ -165,44 +165,32 @@ def on_click(event):
         # plt.disconnect(binding_id)
         pass
 
-    
 
-fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(10,10))
-ax = axes.flat
-default_inject = [0.5,0.5]
+for df in [rc.df, cc.df]:
+    fig, axes = plt.subplots(ncols=2, figsize=(10,5))
+    ax = axes.flat
+    default_inject = [0.5,0.5]
 
-src_rc, trg_rc = tri_injection(rc.df, default_inject)
-src_cc, trg_cc = tri_injection(cc.df, default_inject)
+    src, trg = tri_injection(rc.df, default_inject)
 
-ax[0].imshow(src_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-ax[0].set_title(rc.source_name)
-ax[0].set_xlabel(rc.source_y)
-ax[0].set_ylabel(rc.source_x)
+    ax[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+    ax[0].set_title(rc.source_name)
+    ax[0].set_xlabel(rc.source_y)
+    ax[0].set_ylabel(rc.source_x)
 
-ax[1].imshow(trg_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-ax[1].set_title(rc.target_name)
-ax[1].set_xlabel(rc.target_x)
-ax[1].set_ylabel(rc.target_y)   
+    ax[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+    ax[1].set_title(rc.target_name)
+    ax[1].set_xlabel(rc.target_x)
+    ax[1].set_ylabel(rc.target_y)   
 
-ax[2].imshow(src_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-ax[2].set_title(cc.source_name)
-ax[2].set_xlabel(cc.source_y)
-ax[2].set_ylabel(cc.source_x)
+    fig.suptitle('Anterograde Injections')
+            
+    # ax[0].axis('off')
+    # ax[1].axis('off')
 
-ax[3].imshow(trg_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-ax[3].set_title(cc.target_name)
-ax[3].set_xlabel(cc.target_x)
-ax[3].set_ylabel(cc.target_y)   
-
-
-fig.suptitle('Anterograde Injections')
-        
-# ax[0].axis('off')
-# ax[1].axis('off')
-
-binding_id = plt.connect('motion_notify_event',follow_cursor)
-plt.connect('button_press_event', on_click)
-plt.show()
+    binding_id = plt.connect('motion_notify_event',follow_cursor)
+    plt.connect('button_press_event', on_click)
+    plt.show()
 # %%
 
 
