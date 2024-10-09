@@ -148,15 +148,17 @@ def follow_cursor(event):
         inj = [event.xdata/Num, event.ydata/Num]
         ax[0].clear()
         ax[1].clear()
+        # ax[2].clear()
+        # ax[3].clear()
         
         src_rc, trg_rc = tri_injection(rc.df, inj)
-        src_cc, trg_cc = tri_injection(cc.df, inj)
+        # src_cc, trg_cc = tri_injection(cc.df, inj)
 
         # src, trg = si_src_trg_arrs(refined_map, inj)
         ax[0].imshow(src_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
         ax[1].imshow(trg_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-        ax[2].imshow(src_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-        ax[3].imshow(trg_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+        # ax[2].imshow(src_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0) # too slow to render the 4 graphs all at once
+        # ax[3].imshow(trg_cc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
         fig.canvas.draw()
         
 def on_click(event): 
