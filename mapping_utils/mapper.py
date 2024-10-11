@@ -117,7 +117,7 @@ class Tissue:
                             - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
         } # from Savier et al 2017
         cort_EphBs_dict = {
-            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+            'theoretical': 1 - np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
                             - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1]).T
         } # from Savier et al 2017
         
@@ -144,61 +144,61 @@ class Tissue:
 
 
 
-def show_grads(rc, cc, retina, colliculus, cortex):
-    fig, axes = plt.subplots(ncols=4, nrows=2, figsize=(16,9))
-    axs = axes.flat
-    for ax in axs:
-        ax.axis('on')
-    ax_size = 14
-    title_size = 19
-    axs[0].imshow(retina.EphA, cmap='Blues', origin='lower')
-    axs[0].set_title('Retinal EphA', size=title_size)
-    axs[0].set_xlabel(rc.source_x, size=ax_size)
-    axs[0].set_ylabel(rc.source_y, size=ax_size)
+# def show_grads(rc, cc, retina, colliculus, cortex):
+#     fig, axes = plt.subplots(ncols=4, nrows=2, figsize=(16,9))
+#     axs = axes.flat
+#     for ax in axs:
+#         ax.axis('on')
+#     ax_size = 14
+#     title_size = 19
+#     axs[0].imshow(retina.EphA, cmap='Blues', origin='lower')
+#     axs[0].set_title('Retinal EphA', size=title_size)
+#     axs[0].set_xlabel(rc.source_x, size=ax_size)
+#     axs[0].set_ylabel(rc.source_y, size=ax_size)
 
-    axs[1].imshow(retina.efnA, cmap='Blues', origin='lower')
-    axs[1].set_title('Retinal efnA', size=title_size)
-    axs[1].set_xlabel(rc.source_x, size=ax_size)
-    axs[1].set_ylabel(rc.source_y, size=ax_size)
+#     axs[1].imshow(retina.efnA, cmap='Blues', origin='lower')
+#     axs[1].set_title('Retinal efnA', size=title_size)
+#     axs[1].set_xlabel(rc.source_x, size=ax_size)
+#     axs[1].set_ylabel(rc.source_y, size=ax_size)
 
-    axs[2].imshow(retina.EphB, cmap='Reds', origin='lower')
-    axs[2].set_title('Retinal EphB', size=title_size)
-    axs[2].set_xlabel(rc.source_x, size=ax_size)
-    axs[2].set_ylabel(rc.source_y, size=ax_size)
+#     axs[2].imshow(retina.EphB, cmap='Reds', origin='lower')
+#     axs[2].set_title('Retinal EphB', size=title_size)
+#     axs[2].set_xlabel(rc.source_x, size=ax_size)
+#     axs[2].set_ylabel(rc.source_y, size=ax_size)
     
-    axs[3].imshow(retina.efnB, cmap='Reds', origin='lower')
-    axs[3].set_title('Retinal efnB', size=title_size)
-    axs[3].set_xlabel(rc.source_x, size=ax_size)
-    axs[3].set_ylabel(rc.source_y, size=ax_size)
+#     axs[3].imshow(retina.efnB, cmap='Reds', origin='lower')
+#     axs[3].set_title('Retinal efnB', size=title_size)
+#     axs[3].set_xlabel(rc.source_x, size=ax_size)
+#     axs[3].set_ylabel(rc.source_y, size=ax_size)
 
-    axs[4].imshow(cortex.EphA, cmap='Blues', origin='lower')
-    axs[4].set_title('Cortical EphA', size=title_size)
-    axs[4].set_xlabel(cc.source_x, size=ax_size)
-    axs[4].set_ylabel(cc.source_y, size=ax_size)
+#     axs[4].imshow(cortex.EphA, cmap='Blues', origin='lower')
+#     axs[4].set_title('Cortical EphA', size=title_size)
+#     axs[4].set_xlabel(cc.source_x, size=ax_size)
+#     axs[4].set_ylabel(cc.source_y, size=ax_size)
 
-    axs[5].imshow(colliculus.efnA, cmap='Blues', origin='lower')
-    axs[5].set_title('Collicular efnA', size=title_size)
-    axs[5].set_xlabel(rc.target_x, size=ax_size)
-    axs[5].set_ylabel(rc.target_y, size=ax_size)
+#     axs[5].imshow(colliculus.efnA, cmap='Blues', origin='lower')
+#     axs[5].set_title('Collicular efnA', size=title_size)
+#     axs[5].set_xlabel(rc.target_x, size=ax_size)
+#     axs[5].set_ylabel(rc.target_y, size=ax_size)
 
-    axs[6].imshow(cortex.EphB, cmap='Reds', origin='lower')
-    axs[6].set_title('Cortical EphB', size=title_size)
-    axs[6].set_xlabel(cc.source_x, size=ax_size)
-    axs[6].set_ylabel(cc.source_y, size=ax_size)
+#     axs[6].imshow(cortex.EphB, cmap='Reds', origin='lower')
+#     axs[6].set_title('Cortical EphB', size=title_size)
+#     axs[6].set_xlabel(cc.source_x, size=ax_size)
+#     axs[6].set_ylabel(cc.source_y, size=ax_size)
 
-    axs[7].imshow(colliculus.efnB, cmap='Reds', origin='lower')
-    axs[7].set_title('Collicular efnB', size=title_size)
-    axs[7].set_xlabel(rc.target_x, size=ax_size)
-    axs[7].set_ylabel(rc.target_y, size=ax_size)
+#     axs[7].imshow(colliculus.efnB, cmap='Reds', origin='lower')
+#     axs[7].set_title('Collicular efnB', size=title_size)
+#     axs[7].set_xlabel(rc.target_x, size=ax_size)
+#     axs[7].set_ylabel(rc.target_y, size=ax_size)
 
-    fig.tight_layout()
-    return fig
+#     fig.tight_layout()
+#     return fig
 
 
 
 
 class Mapper:
-    def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03, Num=225):
+    def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03, Num=100):
         """ sets up the params for map refinement before """
         # 1 -- define the mapping params
         self.alpha = alpha
@@ -207,8 +207,8 @@ class Mapper:
         self.R = R 
         self.d = d        
         self.Num = Num
-        
-        self.grid_index = np.array(np.meshgrid(Num,Num)) # a 2D grid of indices for a grid of NxN neurons
+        x = np.arange(Num)
+        self.grid_index = np.array(np.meshgrid(x,x)) # a 2D grid of indices for a grid of NxN neurons
         self.positions = np.array([y for x in self.grid_index.T for y in x])
         
     def init_random_map(self):
