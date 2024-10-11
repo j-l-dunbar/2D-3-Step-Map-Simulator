@@ -2,6 +2,8 @@
 import numpy as np
 from numba import njit
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tk
+from fractions import Fraction
 
 """_summary_
     - This is going to accept the precalculated positions and reference everything according to the RCmap      
@@ -28,11 +30,14 @@ class Tissue:
         self.isl2 = np.random.randint(0, 2, (num_rows, num_rows)) # 2D array of Isl2+ cells (technically only available in the retina)
         self.isl2_hetko = (1+self.isl2)/2 # zeros become 0.5 - for single allele mutants
 
-    def set_gradients(self, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
-        if EphA!={}: self.EphA = self.sum_grads(EphA)
-        if EphB!={}: self.EphB = self.sum_grads(EphB)
-        if efnA!={}: self.efnA = self.sum_grads(efnA)
-        if efnB!={}: self.efnB = self.sum_grads(efnB)
+        self.EphA_dict, self.EphB_dict = None, None
+        self.efnA_dict, self.efnB_dict = None, None
+
+    def set_gradients(self):
+        if self.EphA_dict: self.EphA = self.sum_grads(self.EphA_dict)
+        if self.EphB_dict: self.EphB = self.sum_grads(self.EphB_dict)
+        if self.efnA_dict: self.efnA = self.sum_grads(self.efnA_dict)
+        if self.efnB_dict: self.efnB = self.sum_grads(self.efnB_dict)
 
     def sum_grads(self, gradient_dict:dict)-> np.ndarray:
         """ combines the individual gene in a family into a single gradient
@@ -112,13 +117,15 @@ class Tissue:
                             - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
         } # from Savier et al 2017
         cort_EphBs_dict = {
-            'theoretical': 1 - np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
                             - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1]).T
         } # from Savier et al 2017
         
         return ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, sc_efnAs_dict, sc_efnBs_dict, cort_EphAs_dict, cort_EphBs_dict
     
     def make_isl2_ki(self, mutant_name:str, strength:float, target_dict:dict, het:bool=False):
+        if mutant_name in target_dict.keys(): 
+            raise NameError("That gene name has already been asigned.")        
         isl2 = self.isl2
         if het: isl2 *= 0.5 
         figure_title = f"{mutant_name} - {'ki/+' if het else 'ki/ki'} - {strength}" 
@@ -191,7 +198,7 @@ def show_grads(rc, cc, retina, colliculus, cortex):
 
 
 class Mapper:
-    def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03):
+    def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03, Num=225):
         """ sets up the params for map refinement before """
         # 1 -- define the mapping params
         self.alpha = alpha
@@ -199,23 +206,27 @@ class Mapper:
         self.gamma = gamma
         self.R = R 
         self.d = d        
+        self.Num = Num
         
-    def init_random_map(self, Num):
-        return np.random.permutation(Num**2)
+        self.grid_index = np.array(np.meshgrid(Num,Num)) # a 2D grid of indices for a grid of NxN neurons
+        self.positions = np.array([y for x in self.grid_index.T for y in x])
+        
+    def init_random_map(self):
+        return np.random.permutation(self.Num**2)
     
     def make_map_df(self, hash_map, src_tissue, trg_tissue):    
         ''' takes the various arrays and combines them into a single dataframe for Numba to opperate on efficiently 
                 - the abstraction of doing it this way is worth if for the speed that is gained
         '''
         df_index = {
-        'id_src': 0, # index column 
-        'EphA_at_src': 1, # [EphA] this axons carrie
-        'EphB_at_src': 2, # [EphB] this axons carries
+                 'id_src': 0, # index column 
+            'EphA_at_src': 1, # [EphA] this axons carries
+            'EphB_at_src': 2, # [EphB] this axons carries
         'pos_at_src.T[0]': 3, # source X (decimal)
         'pos_at_src.T[1]': 4, # source Y (decimal)
-        'RCmap': 5, # how this axons connects to the SC
-        'efnA_at_trg': 6, # [efnA] that this axons sees
-        'efnB_at_trg': 7, # [efnB] that this axons sees
+                  'RCmap': 5, # how this axons connects to the SC
+            'efnA_at_trg': 6, # [efnA] that this axons sees
+            'efnB_at_trg': 7, # [efnB] that this axons sees
         'pos_at_trg.T[0]': 8, # target X
         'pos_at_trg.T[1]': 9, # target Y
         }
@@ -231,7 +242,43 @@ class Mapper:
         
         self.df = np.vstack((id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], hash_map, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]))
         return self.df
+
+    def df_show_grads(self):
+        df = self.df
+        EphA, EphB = df[1:3]
+        efnA, efnB = df[6:8][:,df[5].argsort()]
+        arrs = [EphA, EphB, efnA, efnB]
+        colors = ['gist_heat', 'GnBu']*2
         
+        fig, axes = plt.subplots(figsize=(10,10), ncols = 2, nrows=2)
+        axes = axes.flat
+        
+        for ax, arr, col in zip(axes, arrs, colors):
+            empty_img = np.zeros((self.Num, self.Num))
+            for i, xy in zip(arr, self.positions):
+                empty_img[*xy] = i
+            ax.imshow(empty_img, cmap=col, origin='lower')
+        self.fractional_axes(axes, self.Num)
+        return fig    
+
+    def fractional_axes(self, axes, Num, color='k', numticks=9):
+        for ax in axes:
+            ax.set_xlim(0, Num)
+            ax.set_ylim(0, Num)
+            ax.xaxis.set_major_locator(tk.LinearLocator(numticks))
+            ax.yaxis.set_major_locator(tk.LinearLocator(numticks))
+
+            x = ax.get_xticks()
+            y = ax.get_yticks()
+
+            x_labs = ["{}/{}".format(*Fraction(i/Num).limit_denominator(16).as_integer_ratio()) if i>0 else '0' for i in x]
+            y_labs = ["{}/{}".format(*Fraction(i/Num).limit_denominator(16).as_integer_ratio()) if i>0 else '0' for i in y]
+            x_labs[-1] = 1
+            y_labs[-1] = 1
+            ax.set_xticklabels(x_labs)
+            ax.set_yticklabels(y_labs)
+            ax.grid(c=color)
+
     def refine_map(self, n_repeats=2E4, deterministic=True) -> None:
         print('Refining map...')
         df = refine_map_iter(self.df, self.alpha, self.beta, 
@@ -345,11 +392,7 @@ def eAct(ax1, ax2, df, R, gamma, d) ->  np.ndarray:
 @njit(nogil=True)
 def refine_map_iter(df, alpha, beta, gamma, R, d, n_repeats=3E4, deterministic=True, parallel=True) -> np.ndarray:
     """
-    refines the collicular map N times, iteratively 
-
-    Raises:
-        ValueError: The total number of axons must be even, simply due to the mechanism chosen for refinement. All axons are paired with another, and so the total must be even. 
-
+    refines the collicular map `n_repeats` times, iteratively 
     Returns:
         np.ndarray: the refined map with the residuals of the refinement process (representing how the refinement progressed)
     """
