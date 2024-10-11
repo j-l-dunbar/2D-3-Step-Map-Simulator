@@ -112,21 +112,28 @@ print('Map Refined: {}'.format(datetime.now() - lap_time))
 #%%
 
 
-def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
+def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, anterograde=True):
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing point
-    in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point (L2 Norm)
+    # in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point (L2 Norm)
+    in_range_src = np.linalg.norm((df[8:] - injection_arr), axis=0) # all distances to point (L2 Norm)
     
     inj = in_range_src  
-    hash_map = df[5].argsort().astype(int)
+    hash_map_trg = df[5].argsort().astype(int)
+    hash_map_src = df[5].astype(int)
+    
+    if anterograde: 
+        hash_map_src = np.ones_like(hash_map_src)
+    else:
+        hash_map_trg = np.ones_like(hash_map_trg)
 
     # how the injection would appear in the source
     src_arr = np.zeros((Num,Num))
-    for c, i in zip(retina.positions, inj): # recreates the 2D plane from coordinate data
+    for c, i in zip(retina.positions, inj[hash_map_src]): # recreates the 2D plane from coordinate data
         src_arr[*c] = i
 
     # how the injection would appear in the target 
     trg_arr = np.zeros((Num, Num))
-    for c, i in zip(colliculus.positions, inj[hash_map]): # recreates the 2D plane from coordinate data
+    for c, i in zip(colliculus.positions, inj[hash_map_trg]): # recreates the 2D plane from coordinate data
         trg_arr[*c] = i
     
     # adds a defined spot in the middle of the decaying 'glow' gradient    
