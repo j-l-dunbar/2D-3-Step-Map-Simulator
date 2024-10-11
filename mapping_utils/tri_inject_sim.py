@@ -34,7 +34,7 @@ def fractional_axes(axes, Num, color='k', numticks=9):
         ax.grid(c=color)
 
 # Setting up gradients in the Retina, Superior Colliculus, and the Primary Visual Cortex
-Num = 250
+Num = 300
 sim_params = {'gamma':100, 'alpha':220, 'beta':220, 'R':0.11, 'd':3/Num**2}
 show_grads_bool = True
 
@@ -49,8 +49,8 @@ retinal_gradients = retina.make_std_grads() # can can the axis along which the g
 # Establish the axon concentrations of Eph and efn to be used for mapping
 ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, _, _, _, _ = retinal_gradients
 figure_title="Wildtype"
-# figure_title, ret_efnAs_dict = retina.make_isl2_ko('efnA2', ret_efnAs_dict)
-figure_title, ret_EphAs_dict = retina.make_isl2_ki('EphA3', 1, ret_EphAs_dict)
+figure_title, ret_efnAs_dict = retina.make_isl2_ko('efnA2', ret_efnAs_dict)
+# figure_title, ret_EphAs_dict = retina.make_isl2_ki('EphA3', 3, ret_EphAs_dict)
 # ret_EphAs_dict['EphA4'] *= retina.isl2 # defining a mutant
 # ret_efnAs_dict['efnA2'] *= retina.isl2 # defining a mutant
 
@@ -114,21 +114,17 @@ print('Map Refined: {}'.format(datetime.now() - lap_time))
 
 def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, anterograde=True):
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing point
-    # in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point (L2 Norm)
-    in_range_src = np.linalg.norm((df[8:] - injection_arr), axis=0) # all distances to point (L2 Norm)
+    if anterograde: 
+        in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point in source (L2 Norm)
+    else:
+        in_range_src = np.linalg.norm((df[8:] - injection_arr), axis=0) # all distances to point in target (L2 Norm) 
     
     inj = in_range_src  
-    hash_map_trg = df[5].argsort().astype(int)
-    hash_map_src = df[5].astype(int)
-    
-    if anterograde: 
-        hash_map_src = np.ones_like(hash_map_src)
-    else:
-        hash_map_trg = np.ones_like(hash_map_trg)
+    hash_map_trg = df[5].argsort().astype(int)  
 
     # how the injection would appear in the source
     src_arr = np.zeros((Num,Num))
-    for c, i in zip(retina.positions, inj[hash_map_src]): # recreates the 2D plane from coordinate data
+    for c, i in zip(retina.positions, inj): # recreates the 2D plane from coordinate data
         src_arr[*c] = i
 
     # how the injection would appear in the target 
@@ -151,31 +147,34 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, anterograde=True):
     return src, trg
 
 
-def tri_injection(df, center, r=1/8):
-    src0, trg0 = si_src_trg_arrs(df, [center[0] - r, center[1] - 2*r])
-    src1, trg1 = si_src_trg_arrs(df, [center[0] + r, center[1] - 2*r])
-    src2, trg2 = si_src_trg_arrs(df, [center[0]    , center[1]])
+def tri_injection(df, center, r=1/8, antero=True):
+    src0, trg0 = si_src_trg_arrs(df, [center[0] - r, center[1] - 2*r], anterograde=antero)
+    src1, trg1 = si_src_trg_arrs(df, [center[0] + r, center[1] - 2*r], anterograde=antero)
+    src2, trg2 = si_src_trg_arrs(df, [center[0]    , center[1]      ], anterograde=antero)
+    # make the blue channel white
     src0 += src2 *0.88
     src1 += src2 *0.88
     trg0 += trg2 *0.88
     trg1 += trg2 *0.88
-
+    # displayable image
     src =  np.array((src0, src1, src2)).T
     trg =  np.array((trg0, trg1, trg2)).T
     
     return src/src.max(), trg/trg.max()
 
 
-
 def follow_cursor(event):
     ''' glued to the cursor when on the map '''
     if event.inaxes:
-        inj = [event.xdata/Num, event.ydata/Num]
+        flip = bool(event.modifiers)
+        if flip: inj = [1-event.ydata/Num, 1-event.xdata/Num]
+        else: inj = [event.xdata/Num, event.ydata/Num]
+        
         ax[0].clear()
         ax[1].clear()
         # fig.canvas.flush_events()
         
-        src_rc, trg_rc = tri_injection(col_map.df, inj)
+        src_rc, trg_rc = tri_injection(col_map.df, inj, antero=not flip)
 
         ax[0].imshow(src_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
         ax[1].imshow(trg_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
@@ -185,9 +184,8 @@ def follow_cursor(event):
 def on_click(event): 
     ''' stop doing `binding_id` on left click '''
     if event.button is MouseButton.LEFT:
-        # plt.disconnect(binding_id)
+        # ant_ret ^= 1
         pass
-
 
 
 # for col_map in [cc]:
@@ -209,19 +207,13 @@ for col_map in [rc, cc]:
     ax[1].set_ylabel(col_map.target_y, size=12)  
     
     fractional_axes(ax, Num, 'k')
-    
-
-    
 
     fig.suptitle(f'{figure_title} - {col_map.name} - Anterograde', size=20)
             
-    # ax[0].axis('off')
-    # ax[1].axis('off')
-
     binding_id = plt.connect('motion_notify_event',follow_cursor)
     plt.connect('button_press_event', on_click)
     plt.show()
 
 # %%
-print('Total Time: {}'.format(datetime.now() - lap_time))
+print('Total Time: {}'.format(datetime.now() - start_time))
 
