@@ -25,10 +25,9 @@ class Tissue:
 
         self.positions = np.array([y for x in self.grid_index.T for y in x]) # array of (x,y) indices
         
-        
         self.isl2 = np.random.randint(0, 2, (num_rows, num_rows)) # 2D array of Isl2+ cells (technically only available in the retina)
+        self.isl2_hetko = (1+self.isl2)/2 # zeros become 0.5 - for single allele mutants
 
-        
     def set_gradients(self, EphA:dict ={}, EphB:dict ={}, efnA:dict ={}, efnB:dict ={}):
         if EphA!={}: self.EphA = self.sum_grads(EphA)
         if EphB!={}: self.EphB = self.sum_grads(EphB)
@@ -119,49 +118,71 @@ class Tissue:
         
         return ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, sc_efnAs_dict, sc_efnBs_dict, cort_EphAs_dict, cort_EphBs_dict
     
+    def make_isl2_ki(self, mutant_name:str, strength:float, target_dict:dict, het:bool=False):
+        isl2 = self.isl2
+        if het: isl2 *= 0.5 
+        figure_title = f"{mutant_name} - {'ki/+' if het else 'ki/ki'} - {strength}" 
+        target_dict[mutant_name] = strength * isl2
+        return figure_title, target_dict
+
+    def make_isl2_ko(self, mutant_name:str, target_dict:dict, het:bool=False):
+        if mutant_name not in target_dict.keys(): 
+            raise NameError("That gene has not been defined")
+        isl2 = self.isl2
+        if het: isl2 = self.isl2_hetko
+        figure_title = f"{mutant_name} {'ko/+' if het else 'ko/ko'}" 
+        target_dict[mutant_name] *= isl2
+        return figure_title, target_dict
+
+
+
 
 def show_grads(rc, cc, retina, colliculus, cortex):
-    fig, axes = plt.subplots(ncols=2, nrows=4, figsize=(5,8))
+    fig, axes = plt.subplots(ncols=4, nrows=2, figsize=(16,9))
     axs = axes.flat
+    for ax in axs:
+        ax.axis('on')
+    ax_size = 14
+    title_size = 19
     axs[0].imshow(retina.EphA, cmap='Blues', origin='lower')
-    axs[0].set_title('retina.EphA')
-    axs[0].set_xlabel(rc.source_x)
-    axs[0].set_ylabel(rc.source_y)
+    axs[0].set_title('Retinal EphA', size=title_size)
+    axs[0].set_xlabel(rc.source_x, size=ax_size)
+    axs[0].set_ylabel(rc.source_y, size=ax_size)
 
-    axs[1].imshow(retina.EphB, cmap='Reds', origin='lower')
-    axs[1].set_title('retina.EphB')
-    axs[1].set_xlabel(rc.source_x)
-    axs[1].set_ylabel(rc.source_y)
+    axs[1].imshow(retina.efnA, cmap='Blues', origin='lower')
+    axs[1].set_title('Retinal efnA', size=title_size)
+    axs[1].set_xlabel(rc.source_x, size=ax_size)
+    axs[1].set_ylabel(rc.source_y, size=ax_size)
 
-    axs[2].imshow(retina.efnA, cmap='Blues', origin='lower')
-    axs[2].set_title('retina.efnA')
-    axs[2].set_xlabel(rc.source_x)
-    axs[2].set_ylabel(rc.source_y)
+    axs[2].imshow(retina.EphB, cmap='Reds', origin='lower')
+    axs[2].set_title('Retinal EphB', size=title_size)
+    axs[2].set_xlabel(rc.source_x, size=ax_size)
+    axs[2].set_ylabel(rc.source_y, size=ax_size)
     
     axs[3].imshow(retina.efnB, cmap='Reds', origin='lower')
-    axs[3].set_title('retina.efnB')
-    axs[3].set_xlabel(rc.source_x)
-    axs[3].set_ylabel(rc.source_y)
-    
-    axs[4].imshow(colliculus.efnA, cmap='Blues', origin='lower')
-    axs[4].set_title('colliculus.efnA')
-    axs[4].set_xlabel(rc.target_x)
-    axs[4].set_ylabel(rc.target_y)
+    axs[3].set_title('Retinal efnB', size=title_size)
+    axs[3].set_xlabel(rc.source_x, size=ax_size)
+    axs[3].set_ylabel(rc.source_y, size=ax_size)
 
-    axs[5].imshow(colliculus.efnB, cmap='Reds', origin='lower')
-    axs[5].set_title('colliculus.efnB')
-    axs[5].set_xlabel(rc.target_x)
-    axs[5].set_ylabel(rc.target_y)
+    axs[4].imshow(cortex.EphA, cmap='Blues', origin='lower')
+    axs[4].set_title('Cortical EphA', size=title_size)
+    axs[4].set_xlabel(cc.source_x, size=ax_size)
+    axs[4].set_ylabel(cc.source_y, size=ax_size)
 
-    axs[6].imshow(cortex.EphA, cmap='Blues', origin='lower')
-    axs[6].set_title('cortex.EphA')
-    axs[6].set_xlabel(cc.source_x)
-    axs[6].set_ylabel(cc.source_y)
+    axs[5].imshow(colliculus.efnA, cmap='Blues', origin='lower')
+    axs[5].set_title('Collicular efnA', size=title_size)
+    axs[5].set_xlabel(rc.target_x, size=ax_size)
+    axs[5].set_ylabel(rc.target_y, size=ax_size)
 
-    axs[7].imshow(cortex.EphB, cmap='Reds', origin='lower')
-    axs[7].set_title('cortex.EphB')
-    axs[7].set_xlabel(cc.source_x)
-    axs[7].set_ylabel(cc.source_y)
+    axs[6].imshow(cortex.EphB, cmap='Reds', origin='lower')
+    axs[6].set_title('Cortical EphB', size=title_size)
+    axs[6].set_xlabel(cc.source_x, size=ax_size)
+    axs[6].set_ylabel(cc.source_y, size=ax_size)
+
+    axs[7].imshow(colliculus.efnB, cmap='Reds', origin='lower')
+    axs[7].set_title('Collicular efnB', size=title_size)
+    axs[7].set_xlabel(rc.target_x, size=ax_size)
+    axs[7].set_ylabel(rc.target_y, size=ax_size)
 
     fig.tight_layout()
     return fig

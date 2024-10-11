@@ -1,24 +1,42 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tk
 import seaborn as sns
+from fractions import Fraction
 from matplotlib.backend_bases import MouseButton
 from mapper import Mapper, Tissue, show_grads
+sns.set_style('darkgrid')
 sns.set_context('paper')
 
 import warnings
-# warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore')
 
 from datetime import datetime
-start_time = datetime.now()
 
 
+def fractional_axes(axes, Num, color='k', numticks=9):
+    for ax in axes:
+        ax.set_xlim(0, Num)
+        ax.set_ylim(0, Num)
+        ax.xaxis.set_major_locator(tk.LinearLocator(numticks))
+        ax.yaxis.set_major_locator(tk.LinearLocator(numticks))
 
+        x = ax.get_xticks()
+        y = ax.get_yticks()
 
-
+        x_labs = ["{}/{}".format(*Fraction(i/Num).limit_denominator(16).as_integer_ratio()) if i>0 else '0' for i in x]
+        y_labs = ["{}/{}".format(*Fraction(i/Num).limit_denominator(16).as_integer_ratio()) if i>0 else '0' for i in y]
+        x_labs[-1] = 1
+        y_labs[-1] = 1
+        ax.set_xticklabels(x_labs)
+        ax.set_yticklabels(y_labs)
+        ax.grid(c=color)
 
 # Setting up gradients in the Retina, Superior Colliculus, and the Primary Visual Cortex
 Num = 250
+sim_params = {'gamma':100, 'alpha':220, 'beta':220, 'R':0.11, 'd':3/Num**2}
+show_grads_bool = True
 
 retina = Tissue(Num, 'Retina')
 colliculus = Tissue(Num, 'SC')
@@ -28,56 +46,56 @@ cortex = Tissue(Num, 'V1')
 retinal_gradients = retina.make_std_grads() # can can the axis along which the gradients are established by passing a corresponding angle
 
 
+# Establish the axon concentrations of Eph and efn to be used for mapping
 ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, _, _, _, _ = retinal_gradients
-ret_EphAs_dict['EphA4'] *= retina.isl2 # defining a mutant
+figure_title="Wildtype"
+# figure_title, ret_efnAs_dict = retina.make_isl2_ko('efnA2', ret_efnAs_dict)
+figure_title, ret_EphAs_dict = retina.make_isl2_ki('EphA3', 1, ret_EphAs_dict)
+# ret_EphAs_dict['EphA4'] *= retina.isl2 # defining a mutant
 # ret_efnAs_dict['efnA2'] *= retina.isl2 # defining a mutant
 
-# Establish the axon concentrations of Eph and efn to be used for mapping
 retina.set_gradients(EphA=ret_EphAs_dict, EphB=ret_EphBs_dict, efnA=ret_efnAs_dict, efnB=ret_efnBs_dict)
-
-# cc_gradients = colliculus.make_std_grads(efnA_angle=45, efnB_angle=0)
 cc_gradients = colliculus.make_std_grads(efnA_angle=0)
-
 _, _, _, _, sc_efnAs_dict, sc_efnBs_dict, cort_EphAs_dict, cort_EphBs_dict = cc_gradients
 colliculus.set_gradients(efnA=sc_efnAs_dict, efnB=sc_efnBs_dict)
 cortex.set_gradients(EphA=cort_EphAs_dict, EphB=cort_EphBs_dict) 
 
-
-
-
-
 # Set up the Retino-Collicular Map 
-rc = Mapper(gamma=100, alpha=220, beta=220, R=0.11, d=3/Num**2)
+rc = Mapper(**sim_params)
 rc.name = "Retino-Colliculuar Map"
-rc.source_name = 'Retina'
-rc.target_name = 'Colliculus'
+rc.source_name, rc.target_name = 'Retina', 'Colliculus'
 rc.source_x, rc.source_y = 'Nasal-Temporal', 'Dorso-Ventral'
 rc.target_y, rc.target_x = 'Anterior-Posterior', 'Medial-Lateral'
 random_RCmap = rc.init_random_map(Num)
 rc.make_map_df(random_RCmap, retina, colliculus)
 
 # Set Up the Cortico-Collicular Map
-cc = Mapper(gamma=200, alpha=220, beta=220, R=0.11, d=0.001)
+cc = Mapper(**sim_params)
 cc.name = "Cortico-Colliculuar Map"
-cc.source_name = 'Cortex'
-cc.target_name = 'Colliculus'
+cc.source_name, cc.target_name = 'Cortex', 'Colliculus'
 cc.source_x, cc.source_y = 'Lateral-Medial', 'Anterior-Posterior'
 cc.target_y, cc.target_x = 'Anterior-Posterior', 'Medial-Lateral'
 random_CCmap = cc.init_random_map(Num) # hash representing random connections between the source and target
 cc.make_map_df(random_CCmap, cortex, colliculus)
 
-fig = show_grads(rc, cc, retina, colliculus, cortex)
-fig.show()
+
+
+if show_grads_bool:
+    fig = show_grads(rc, cc, retina, colliculus, cortex)
+    fractional_axes(fig.axes, Num, 'w', numticks=5)
+    plt.show()
+
 #%%
 
+start_time = datetime.now()
 # Refine the Retino-Collicular Map
 rc.df = rc.refine_map(n_repeats=1E3).copy() # Dataframe representing the refined Retino-Collicular Map, from the "perspective" of the RGCs
 rc.mapped = rc.df[5].astype(int)
 rc.mapped_inv = rc.df[5].argsort().astype(int)
-
 print('Map Refined: {}'.format(datetime.now() - start_time))
 
 
+lap_time = datetime.now()
 # Transpose the Retina Ephrins to the SC
 RCmap_hash = rc.df[5].astype(int) # a hashmap that represents the Bijective Connections between the Retina and the SC
 CCmap_hash = random_CCmap
@@ -90,7 +108,7 @@ cc.df[6], cc.df[7] = transposed_efns[0][CCmap_hash], transposed_efns[1][CCmap_ha
 
 df_CC = cc.refine_map(n_repeats=1E3).copy() 
 
-print('Map Refined: {}'.format(datetime.now() - start_time))
+print('Map Refined: {}'.format(datetime.now() - lap_time))
 #%%
 
 
@@ -126,10 +144,10 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
     return src, trg
 
 
-def tri_injection(df, center, r=0.11):
-    src0, trg0 = si_src_trg_arrs(df, [center[0] - r, center[1] - r])
-    src1, trg1 = si_src_trg_arrs(df, [center[0] + r, center[1] - r])
-    src2, trg2 = si_src_trg_arrs(df, [center[0]    , center[1] + 0.66*r])
+def tri_injection(df, center, r=1/8):
+    src0, trg0 = si_src_trg_arrs(df, [center[0] - r, center[1] - 2*r])
+    src1, trg1 = si_src_trg_arrs(df, [center[0] + r, center[1] - 2*r])
+    src2, trg2 = si_src_trg_arrs(df, [center[0]    , center[1]])
     src0 += src2 *0.88
     src1 += src2 *0.88
     trg0 += trg2 *0.88
@@ -148,8 +166,9 @@ def follow_cursor(event):
         inj = [event.xdata/Num, event.ydata/Num]
         ax[0].clear()
         ax[1].clear()
+        # fig.canvas.flush_events()
         
-        src_rc, trg_rc = tri_injection(rc.df, inj)
+        src_rc, trg_rc = tri_injection(col_map.df, inj)
 
         ax[0].imshow(src_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
         ax[1].imshow(trg_rc, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
@@ -163,24 +182,31 @@ def on_click(event):
         pass
 
 
-for df in [rc.df, cc.df]:
+
+# for col_map in [cc]:
+for col_map in [rc, cc]:
     fig, axes = plt.subplots(ncols=2, figsize=(10,5))
     ax = axes.flat
-    default_inject = [0.5,0.5]
+    default_inject = [0.5,0.5+1/8]
 
-    src, trg = tri_injection(rc.df, default_inject)
+    src, trg = tri_injection(col_map.df, default_inject)
 
     ax[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-    ax[0].set_title(rc.source_name)
-    ax[0].set_xlabel(rc.source_y)
-    ax[0].set_ylabel(rc.source_x)
+    ax[0].set_title(col_map.source_name, size=15)
+    ax[0].set_xlabel(col_map.source_y, size=12)
+    ax[0].set_ylabel(col_map.source_x, size=12)
 
     ax[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-    ax[1].set_title(rc.target_name)
-    ax[1].set_xlabel(rc.target_x)
-    ax[1].set_ylabel(rc.target_y)   
+    ax[1].set_title(col_map.target_name, size=15)
+    ax[1].set_xlabel(col_map.target_x, size=12)
+    ax[1].set_ylabel(col_map.target_y, size=12)  
+    
+    fractional_axes(ax, Num, 'k')
+    
 
-    fig.suptitle('Anterograde Injections')
+    
+
+    fig.suptitle(f'{figure_title} - {col_map.name} - Anterograde', size=20)
             
     # ax[0].axis('off')
     # ax[1].axis('off')
@@ -188,6 +214,7 @@ for df in [rc.df, cc.df]:
     binding_id = plt.connect('motion_notify_event',follow_cursor)
     plt.connect('button_press_event', on_click)
     plt.show()
-# %%
 
+# %%
+print('Total Time: {}'.format(datetime.now() - lap_time))
 
