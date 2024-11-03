@@ -53,7 +53,7 @@ class Tissue:
         for grad in grad_list[1:]:
             summed+= grad
         summed[summed<0] = 0 # to accound for hypothetical negative 'knockin' mutants (knockdown?)
-        summed = self.normalize_grad(summed) 
+        # summed = self.normalize_grad(summed) 
         return summed
 
     def normalize_grad(self, xy): # TODO this normalizing strategy doesn't work for the 2D gradients -- this needs to be coded differently -- normalizing the gradients before stretching them out could be a slution, but that would need come way to incorporate specific Isl2 insertions/deletions for specific members, after they have been summed and turned 2D
@@ -69,9 +69,9 @@ class Tissue:
         #     xy[i] = yy/auc  
         # return xy  
 
-        return xy/np.median(xy)
+        return xy/np.max(xy)
 
-    def make_std_grads(self, EphA_angle=90, EphB_angle=0, efnA_angle=270, efnB_angle=180):
+    def make_std_grads(self, EphA_angle=90, EphB_angle=180, efnA_angle=270, efnB_angle=0):
         x= self.grid_fract
 
         EphA_comps = np.cos(EphA_angle*np.pi/180)*x[1] + np.sin(EphA_angle*np.pi/180)*x[0]
@@ -117,7 +117,7 @@ class Tissue:
                             - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1])
         } # from Savier et al 2017
         cort_EphBs_dict = {
-            'theoretical': 1 - np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
+            'theoretical': np.tile(np.exp((np.arange(self.Num) - self.Num) / self.Num) 
                             - np.exp((-np.arange(self.Num) - self.Num) / self.Num), [self.Num, 1]).T
         } # from Savier et al 2017
         
@@ -198,7 +198,7 @@ class Tissue:
 
 
 class Mapper:
-    def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03, Num=100):
+    def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03, Num=100, **_):
         """ sets up the params for map refinement before """
         # 1 -- define the mapping params
         self.alpha = alpha
@@ -247,10 +247,10 @@ class Mapper:
         df = self.df
         EphA, EphB = df[1:3]
         efnA, efnB = df[6:8][:,df[5].argsort()]
-        arrs = [EphA, EphB, efnA, efnB]
-        colors = ['gist_heat', 'GnBu']*2
+        arrs = [EphA, efnA, EphB, efnB]
+        colors = ['GnBu', 'GnBu', 'OrRd', 'OrRd']
         
-        fig, axes = plt.subplots(figsize=(10,10), ncols = 2, nrows=2)
+        fig, axes = plt.subplots(figsize=(9,9), ncols = 2, nrows=2)
         axes = axes.flat
         
         for ax, arr, col in zip(axes, arrs, colors):
@@ -258,8 +258,9 @@ class Mapper:
             for i, xy in zip(arr, self.positions):
                 empty_img[*xy] = i
             ax.imshow(empty_img, cmap=col, origin='lower')
-        self.fractional_axes(axes, self.Num)
-        return fig    
+            self.fractional_axes([ax], self.Num)
+            
+        return fig
 
     def fractional_axes(self, axes, Num, color='k', numticks=9):
         for ax in axes:
@@ -278,6 +279,7 @@ class Mapper:
             ax.set_xticklabels(x_labs)
             ax.set_yticklabels(y_labs)
             ax.grid(c=color)
+        return axes
 
     def refine_map(self, n_repeats=2E4, deterministic=True) -> None:
         print('Refining map...')
