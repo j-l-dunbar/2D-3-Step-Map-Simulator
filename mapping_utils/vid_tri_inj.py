@@ -1,79 +1,30 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
-
-import seaborn as sns
-
-# from matplotlib.backend_bases import MouseButton
 from matplotlib.animation import FuncAnimation
 from matplotlib import animation
-from sim_tools import make_std_tissues, run_map_sim
+import seaborn as sns
+from datetime import datetime
+import warnings
+import pickle
+
+warnings.filterwarnings('ignore')
 sns.set_style('darkgrid')
 sns.set_context('paper')
-
-import warnings
-warnings.filterwarnings('ignore')
-
-from datetime import datetime
 start_time = datetime.now()
 
 
-
-Num = 150
+Num = 350
 show_grads_bool = False
+save_grads_bool = True
 complex_transpose = False
 
-sim_params = {'gamma':100, 'alpha':220, 'beta':220, 'R':0.11, 'd':3/Num**2, 'Num':Num, 'show_grads_bool':show_grads_bool, 'complex_transpose':complex_transpose}
+sim_params = {'gamma':100, 'alpha':220, 'beta':220, 'R':0.11, 'd':3/Num**2, 'Num':Num, 'show_grads_bool':show_grads_bool, 'complex_transpose':False}
 
-
-x = np.linspace(0,0.7, 8)
-
-for strength in x:
-    pass
-
-# initialize the gradients to be used for mapping
-retina, colliculus, cortex = make_std_tissues(sim_params)
-mutations=[]
-mutant_parts = []
-
-# define any mutants
-
-# target_name = 'efnA5'
-# mutations.append(target_name + 'ko/ko')
-# retina.efnA_dict[target_name] *= 0
-# colliculus.efnA_dict[target_name] *= 0
-
-# mutant_part, retina.EphA_dict =  retina.make_isl2_ki('EphA Large', 5, retina.EphA_dict)
-# mutant_part, retina.EphA_dict =  retina.make_isl2_ki(' EphA4', 1, retina.EphA_dict)
-# mutant_part, retina.EphB_dict =  retina.make_isl2_ki('EphB Large', 0.5, retina.EphB_dict)
-# mutant_part, retina.efnA_dict =  retina.make_isl2_ki('efnA Large', 5, retina.efnA_dict)
-mutant_part, retina.efnA_dict =  retina.make_isl2_ki(' efnA3', 0.075, retina.efnA_dict)
-# mutant_part, retina.efnB_dict =  retina.make_isl2_ki('efnB Large',3, retina.efnB_dict)
-
-if mutant_part:
-    mutations.append(mutant_part)
-else: 
-    mutations = ['Wildtype']
-
-# run the 3 Step Map Alignment Model
-rc, cc, rc_fig_grads, cc_fig_grads = run_map_sim(retina, colliculus, cortex, sim_params)
-
-
-
-
-
-
-grads_title = f"{'-'.join(mutations)}"
-fname_grads = grads_title.replace('/','').replace(' ', '')
-if show_grads_bool: 
-    rc_fig_grads.show(), cc_fig_grads.show()
-else:
-    rc_fig_grads.savefig(fname_grads + '_rc.png', dpi=300)
-    cc_fig_grads.savefig(fname_grads + '_cc.png', dpi=300)
-    
-    
-
-
+fname = r'G:\Cloud_Files\OneDrive\__GitRepos__\2D 3 Step Map SImulator\efnA_KI_dicts.pkl'
+with open(fname, 'rb') as f:
+    mutant_frames = pickle.load(f)
+mutations, retina, colliculus, rc, cc = list(mutant_frames.values())[0]
 
 def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, retro=False):
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing the injectios point
@@ -114,11 +65,6 @@ def tri_injection(df, center, r=3/32, retro=False):
     coords1 = [center[0] - r* np.sqrt(2), center[1] - r* np.sqrt(2)] # Red and Green
     coords2 = [center[0] - r* np.sqrt(2), center[1] + r* np.sqrt(2)] 
     coords3 = [center[0] +r , center[1] ] # White
-
-    if retro:
-        coords1 = [center[0] + 2*r, center[1] + r]
-        coords2 = [center[0] + 2*r, center[1] - r]
-        coords3 = coords3
     
     src0, trg0 = si_src_trg_arrs(df, coords1, retro=retro)
     src1, trg1 = si_src_trg_arrs(df, coords2, retro=retro)
@@ -142,7 +88,7 @@ def update_figure(phi):
         axes[0].clear()
         axes[1].clear()
         
-        src, trg = tri_injection(col_map.df, inj, retro=False)
+        src, trg = tri_injection(col_map.df, inj, retro=True)
 
         axes[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0) # image of staned axons at the source
         axes[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0) # image of staned axons at the target
@@ -165,35 +111,40 @@ def set_axis_labels(col_map, axes):
     rc.fractional_axes(axes, Num, 'k')
 
 
+for x in list(mutant_frames.keys()):
+    try:
+        mutations, retina, colliculus, rc, cc, = mutant_frames[x]
+    except:
+        print(f'{type(x) =}')
+        print('Not a valid item.')
+        continue
 
+    for col_map in [cc]:
+        lap_time = datetime.now()
+        fig, axes = plt.subplots(ncols=2, figsize=(8,4))
+        axes = axes.flat
+        default_inject = [0.5,0.5]
 
+        src, trg = tri_injection(col_map.df, default_inject) # image of a simulated injection as seen in the source and the target
 
-for col_map in [cc]:
-    fig, axes = plt.subplots(ncols=2, figsize=(10,5))
-    axes = axes.flat
-    default_inject = [0.5,0.5+1/8]
+        axes[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+        axes[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
 
-    src, trg = tri_injection(col_map.df, default_inject) # image of a simulated injection as seen in the source and the target
+        set_axis_labels(col_map, axes)
 
-    axes[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-    axes[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
+        figure_title = f'{mutations} - {col_map.name} - Retrograde'
+        fig.suptitle(figure_title, size=20)
+                
+        ani = FuncAnimation(fig, update_figure, blit=False, repeat=False,
+                        frames=np.linspace(0,2*np.pi,360, endpoint=None))
 
-    set_axis_labels(col_map, axes)
+        f=f"{figure_title.replace('/','').replace(' ', '')}.mp4"
+        print(f)
+        writervideo = animation.FFMpegWriter(fps=30) 
+        if not show_grads_bool: ani.save(f, writer=writervideo, dpi=300)
+        print('\tLap Time: {}'.format(datetime.now() - lap_time))
 
-    figure_title = f'{"-".join(mutations)} - {col_map.name} - Anterograde'
-    fig.suptitle(figure_title, size=20)
-            
-    ani = FuncAnimation(fig, update_figure, interval=30, blit=False, repeat=False,
-                    frames=np.linspace(0,2*np.pi,360, endpoint=None))
-
-    f=f"{figure_title.replace('/','').replace(' ', '')}.mp4"
-    print(f)
-    writervideo = animation.FFMpegWriter(fps=30) 
-    if not show_grads_bool: ani.save(f, writer=writervideo, dpi=300)
-    
-
-for x in [rc_fig_grads, cc_fig_grads, fig, ani]:
-    plt.close(x)
+        plt.close(fig)
 
 
 print('Total Time: {}'.format(datetime.now() - start_time))

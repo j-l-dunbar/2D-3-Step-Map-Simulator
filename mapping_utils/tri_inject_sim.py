@@ -18,26 +18,27 @@ start_time = datetime.now()
 
 
 
-Num = 50
-show_grads_bool = True
-complex_transpose = False
+Num = 250
 
-sim_params = {'gamma':100, 'alpha':220, 'beta':220, 'R':0.11, 'd':3/Num**2, 'Num':Num, 'show_grads_bool':show_grads_bool, 'complex_transpose':complex_transpose}
-
-# coords_to_img, make_std_tissues, run_map_sim
-
-
-
+sim_params = {'gamma':100, 
+              'alpha':220, 
+              'beta':220, 
+              'R':0.11, 
+              'd':3/Num**2, 
+              'Num':Num, 
+              'show_grads_bool':False, 
+              'complex_transpose':False,
+              }
 
 # initialize the gradients to be used for mapping
 retina, colliculus, cortex = make_std_tissues(sim_params)
-mutant_title=''
+mutations=[]
 
 # define any mutants
-target_name = 'efnA5'
-mutant_title.append(target_name + 'ko/ko')
-retina.efnA_dict[target_name] *= 0
-colliculus.efnA_dict[target_name] *= 0
+# target_name = 'efnA5'
+# mutations.append(target_name + 'ko/ko')
+# retina.efnA_dict[target_name] *= 0
+# colliculus.efnA_dict[target_name] *= 0
 
 # mutant_part, retina.EphA_dict =  retina.make_isl2_ki('EphA Large', 5, retina.EphA_dict)
 # mutant_part, retina.EphB_dict =  retina.make_isl2_ki('EphB Large', 0.5, retina.EphB_dict)
@@ -50,21 +51,15 @@ colliculus.efnA_dict[target_name] *= 0
 # run the 3 Step Map Alignment Model
 rc, cc, rc_fig_grads, cc_fig_grads = run_map_sim(retina, colliculus, cortex, sim_params)
 
-# rc_fig_grads, cc_fig_grads
 
+if not mutations: mutations = ['Wildtype']
 
-
-
-
-#%%
 
 def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, retro=False):
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing the injectios point
     
-    if retro: 
-        in_range_src = np.linalg.norm((df[8:] - injection_arr), axis=0) # all distances to point in target (L2 Norm) 
-    else: 
-        in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point in source (L2 Norm)
+    if retro: in_range_src = np.linalg.norm((df[8:] - injection_arr), axis=0) # all distances to point in target (L2 Norm) 
+    else: in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0) # all distances to point in source (L2 Norm)
     
     inj = in_range_src  
     hash_map_trg = df[5].argsort().astype(int)  # to convert the infromation from retinal space to collicular space
@@ -127,7 +122,7 @@ def follow_cursor(event):
     if event.inaxes:
         retro = bool(event.modifiers)
         inj = [event.ydata/Num, event.xdata/Num]
-        if retro: inj = [1-event.xdata/Num, 1-event.ydata/Num]
+        if retro: inj = [1-event.xdata/Num, event.ydata/Num]
         
         axes[0].clear()
         axes[1].clear()
@@ -173,7 +168,7 @@ for col_map in [rc, cc]:
 
     set_axis_labels(col_map, axes)
 
-    fig.suptitle(f'{mutant_title} - {col_map.name} - Anterograde', size=20)
+    fig.suptitle(f'{"-".join(mutations)} - {col_map.name} - Anterograde', size=20)
             
     binding_id = plt.connect('motion_notify_event',follow_cursor)
     plt.connect('button_press_event', on_click)
@@ -181,32 +176,6 @@ for col_map in [rc, cc]:
 
 
 print('Total Time: {}'.format(datetime.now() - start_time))
-
-# for col_map in [rc, cc]:
-#     fig, axes = plt.subplots(ncols=2, figsize=(10,5))
-#     ax = axes.flat
-#     default_inject = [0.5,0.5+1/8]
-
-#     src, trg = tri_injection(col_map.df, default_inject)
-
-#     ax[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-#     ax[0].set_title(col_map.source_name, size=15)
-#     ax[0].set_xlabel(col_map.source_y, size=12)
-#     ax[0].set_ylabel(col_map.source_x, size=12)
-
-#     ax[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
-#     ax[1].set_title(col_map.target_name, size=15)
-#     ax[1].set_xlabel(col_map.target_x, size=12)
-#     ax[1].set_ylabel(col_map.target_y, size=12)  
-    
-#     rc.fractional_axes(ax, Num, 'k')
-
-#     fig.suptitle(f'{mutant_title} - {col_map.name} - Anterograde', size=20)
-            
-#     binding_id = plt.connect('motion_notify_event',follow_cursor)
-#     plt.connect('button_press_event', on_click)
-#     plt.show()
-
 
 
 #%%

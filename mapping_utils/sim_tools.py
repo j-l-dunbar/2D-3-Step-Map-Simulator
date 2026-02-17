@@ -19,6 +19,9 @@ from datetime import datetime
 #         new_img[*xy] = i
 #     return new_img
 
+
+
+
 def make_std_tissues(sim_params):
     Num = sim_params['Num']
     # Setting up gradients in the Retina, Superior Colliculus, and the Primary Visual Cortex
@@ -45,7 +48,7 @@ def run_map_sim(retina, colliculus, cortex, sim_params):
 
     # Set up the Retino-Collicular Map 
     rc = Mapper(**sim_params)
-    rc.name = "Retino-Colliculuar Map"
+    rc.name = "Retino-Collicular Map"
     rc.source_name, rc.target_name = 'Retina', 'Colliculus'
     rc.source_x, rc.source_y = 'Nasal-Temporal', 'Ventro-Dorsal'
     rc.target_y, rc.target_x = 'Anterior-Posterior', 'Medial-Lateral'
@@ -54,7 +57,7 @@ def run_map_sim(retina, colliculus, cortex, sim_params):
 
     # Set Up the Cortico-Collicular Map
     cc = Mapper(**sim_params)
-    cc.name = "Cortico-Colliculuar Map"
+    cc.name = "Cortico-Collicular Map"
     cc.source_name, cc.target_name = 'Cortex', 'Colliculus'
     cc.source_x, cc.source_y = 'Lateral-Medial', 'Anterior-Posterior'
     cc.target_y, cc.target_x = 'Anterior-Posterior', 'Medial-Lateral'
@@ -134,3 +137,50 @@ def run_map_sim(retina, colliculus, cortex, sim_params):
 
     return rc, cc, rc_fig_grads, cc_fig_grads
 
+
+
+def sim_efnA_ki(strength, sim_params):
+    'Simulates an Isl2-mediated efnA knock in of a specified strength'
+    # initialize the gradients to be used for mapping
+    retina, colliculus, cortex = make_std_tissues(sim_params)
+    mutations, retina.efnA_dict =  retina.make_isl2_ki('efnA', strength, retina.efnA_dict)
+    # run the 3 Step Map Alignment Model
+    rc, cc, rc_fig_grads, cc_fig_grads = run_map_sim(retina, colliculus, cortex, sim_params)
+    
+    return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
+
+def sim_efnA_ko(target, sim_params):
+    'Simulates an Isl2-mediated efnA knock out of a specified strength'
+    # initialize the gradients to be used for mapping
+    retina, colliculus, cortex = make_std_tissues(sim_params)
+    mutations, retina.efnA_dict =  retina.make_isl2_ko(target, retina.efnA_dict)
+    # run the 3 Step Map Alignment Model
+    rc, cc, rc_fig_grads, cc_fig_grads = run_map_sim(retina, colliculus, cortex, sim_params)
+    
+    return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
+
+def sim_EphA_ki(strength, sim_params):
+    'Simulates an Isl2-mediated EphA knock in of a specified strength'
+    # initialize the gradients to be used for mapping
+    retina, colliculus, cortex = make_std_tissues(sim_params)
+    mutations, retina.EphA_dict =  retina.make_isl2_ki('EphA', strength, retina.EphA_dict)
+    # run the 3 Step Map Alignment Model
+    rc, cc, rc_fig_grads, cc_fig_grads = run_map_sim(retina, colliculus, cortex, sim_params)
+    
+    return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
+
+def sim_EphA_ko(target, sim_params):
+    'Simulates an Isl2-mediated EphA knock out of a specified strength'
+    # initialize the gradients to be used for mapping
+    retina, colliculus, cortex = make_std_tissues(sim_params)
+    mutations, retina.EphA_dict =  retina.make_isl2_ko(target, retina.EphA_dict)
+    # run the 3 Step Map Alignment Model
+    rc, cc, rc_fig_grads, cc_fig_grads = run_map_sim(retina, colliculus, cortex, sim_params)
+    
+    return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
+
+def save_grad_pics(mutations, rc_fig_grads, cc_fig_grads, dpi=300):
+    grads_title = f"{'-'.join(mutations)}"
+    fname_grads = grads_title.replace('/','').replace(' ', '')
+    rc_fig_grads.savefig(fname_grads + '_rc.png', dpi=dpi)
+    cc_fig_grads.savefig(fname_grads + '_cc.png', dpi=dpi)

@@ -69,7 +69,8 @@ class Tissue:
         #     xy[i] = yy/auc  
         # return xy  
 
-        return xy/np.max(xy)
+        # return xy/np.max(xy) 
+        raise NotImplementedError("Normalization is not properly implemented now.") # TODO find a better way to standardize the "Area Under the Curve" of the summed gradientes into a standard total value
 
     def make_std_grads(self, EphA_angle=90, EphB_angle=180, efnA_angle=270, efnB_angle=0):
         x= self.grid_fract
