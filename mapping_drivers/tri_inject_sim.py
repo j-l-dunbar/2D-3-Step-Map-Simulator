@@ -30,16 +30,17 @@ sim_params = {'gamma':100,
               'complex_transpose':False,
               }
 
-# initialize the gradients to be used for mapping
+    # initialize the gradients to be used for mapping
 retina, colliculus, cortex = make_std_tissues(sim_params)
 mutations=[]
 
-# define any mutants
+# Define any mutants
 # target_name = 'efnA5'
 # mutations.append(target_name + 'ko/ko')
 # retina.efnA_dict[target_name] *= 0
 # colliculus.efnA_dict[target_name] *= 0
 
+# Various components of a compound mutant
 # mutant_part, retina.EphA_dict =  retina.make_isl2_ki('EphA Large', 5, retina.EphA_dict)
 # mutant_part, retina.EphB_dict =  retina.make_isl2_ki('EphB Large', 0.5, retina.EphB_dict)
 # mutant_part, retina.efnA_dict =  retina.make_isl2_ki('efnA3ki', 5, retina.efnA_dict)
@@ -51,9 +52,9 @@ mutations=[]
 # run the 3 Step Map Alignment Model
 rc, cc, rc_fig_grads, cc_fig_grads = run_map_sim(retina, colliculus, cortex, sim_params)
 
-
-if not mutations: mutations = ['Wildtype']
-
+# Default simulation condition
+if not mutations: 
+    mutations = ['Wildtype']
 
 def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, retro=False):
     """generates a simulated focal injection experiment based on simulated topographic maps phenotypes (df)
@@ -142,7 +143,6 @@ def follow_cursor(event):
         # fig.canvas.flush_events()
         
         src, trg = tri_injection(col_map.df, inj, retro=retro)
-
         # if retro: # makes the retrograde injections the photo negative
         #     src, trg = 1-src, 1-trg
 

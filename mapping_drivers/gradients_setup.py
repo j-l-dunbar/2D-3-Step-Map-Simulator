@@ -59,10 +59,17 @@ print('Map Refined: {}'.format(datetime.now() - start_time))
 
 #%%
 def source_injection(df, inject=[0.5,0.5]):
-    
+    """ Simulates a single point anterograde focal injection
+
+    Args:
+        df (np.ndarray): resultant dataframe from topographic map simulation
+        inject (list, optional): Location for the injection, as a position between 0 and 1. Defaults to [0.5,0.5].
+
+    Returns:
+        fig: figure showing the predicted phenotype observable by anterograde focal injection
+    """
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1]))
     # how the injection would appear in the source
-    
     
     in_range_src = np.linalg.norm((df[3:5] - injection_arr), axis=0)
     inj = in_range_src
@@ -94,15 +101,13 @@ def source_injection(df, inject=[0.5,0.5]):
 
 # fig = source_injection(refined_map, [0.5,0.5])
 
-
 end_time = datetime.now()
 print('Total Duration: {}'.format(end_time - start_time))
 
-# %%
 # df = refined_map.copy()
 # rc = Mapper(df, gamma=0, alpha=220, beta=220, R=0.11, d=0.01)
 
-
+#%%
 
 refined_map = rc.df
 
@@ -137,9 +142,10 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025):
     # trg = np.tile(trg, [3,1,1]).T
     return src, trg
 
+
+#%%
 import matplotlib.cm as cm      
 from matplotlib.backend_bases import MouseButton
-
 
 def tri_injection(df, center, r=0.11):
     src0, trg0 = si_src_trg_arrs(df, [center[0] - r, center[1] - r])
@@ -153,8 +159,6 @@ def tri_injection(df, center, r=0.11):
     src =  np.array((src0, src1, src2)).T
     trg =  np.array((trg0, trg1, trg2)).T
     return src/src.max(), trg/trg.max()
-
-
 
 def follow_cursor(event):
     ''' glued to the cursor when on the map '''
@@ -178,22 +182,16 @@ fig, ax = plt.subplots(ncols=2, figsize=(10,5))
 default_inject = [0.5,0.5]
 
 src, trg = tri_injection(refined_map, default_inject)
-
 print(src.shape)
-
 
 print(f'{src.shape = }')
 print(f'{trg.shape = }')
 ax[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
 ax[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0)
 
-        
 plt.axis('off')
 binding_id = plt.connect('motion_notify_event',follow_cursor)
 plt.connect('button_press_event', on_click)
 plt.show()
-# %%
-
-# plt.imshow(warped.astype(int))
 
 # %%
