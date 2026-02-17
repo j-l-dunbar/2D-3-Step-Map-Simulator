@@ -16,8 +16,6 @@ warnings.filterwarnings('ignore')
 from datetime import datetime
 start_time = datetime.now()
 
-
-
 Num = 250
 
 sim_params = {'gamma':100, 

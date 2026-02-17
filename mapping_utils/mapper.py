@@ -5,13 +5,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tk
 from fractions import Fraction
 
-"""_summary_
-    - This is going to accept the precalculated positions and reference everything according to the RCmap      
-    
-Returns:
-    _type_: _description_
-"""
-
 
 class Tissue:
     def __init__(self, num_rows:int, name=None):
@@ -141,59 +134,6 @@ class Tissue:
         figure_title = f"{mutant_name} {'ko/+' if het else 'ko/ko'}" 
         target_dict[mutant_name] *= isl2
         return figure_title, target_dict
-
-
-
-
-# def show_grads(rc, cc, retina, colliculus, cortex):
-#     fig, axes = plt.subplots(ncols=4, nrows=2, figsize=(16,9))
-#     axs = axes.flat
-#     for ax in axs:
-#         ax.axis('on')
-#     ax_size = 14
-#     title_size = 19
-#     axs[0].imshow(retina.EphA, cmap='Blues', origin='lower')
-#     axs[0].set_title('Retinal EphA', size=title_size)
-#     axs[0].set_xlabel(rc.source_x, size=ax_size)
-#     axs[0].set_ylabel(rc.source_y, size=ax_size)
-
-#     axs[1].imshow(retina.efnA, cmap='Blues', origin='lower')
-#     axs[1].set_title('Retinal efnA', size=title_size)
-#     axs[1].set_xlabel(rc.source_x, size=ax_size)
-#     axs[1].set_ylabel(rc.source_y, size=ax_size)
-
-#     axs[2].imshow(retina.EphB, cmap='Reds', origin='lower')
-#     axs[2].set_title('Retinal EphB', size=title_size)
-#     axs[2].set_xlabel(rc.source_x, size=ax_size)
-#     axs[2].set_ylabel(rc.source_y, size=ax_size)
-    
-#     axs[3].imshow(retina.efnB, cmap='Reds', origin='lower')
-#     axs[3].set_title('Retinal efnB', size=title_size)
-#     axs[3].set_xlabel(rc.source_x, size=ax_size)
-#     axs[3].set_ylabel(rc.source_y, size=ax_size)
-
-#     axs[4].imshow(cortex.EphA, cmap='Blues', origin='lower')
-#     axs[4].set_title('Cortical EphA', size=title_size)
-#     axs[4].set_xlabel(cc.source_x, size=ax_size)
-#     axs[4].set_ylabel(cc.source_y, size=ax_size)
-
-#     axs[5].imshow(colliculus.efnA, cmap='Blues', origin='lower')
-#     axs[5].set_title('Collicular efnA', size=title_size)
-#     axs[5].set_xlabel(rc.target_x, size=ax_size)
-#     axs[5].set_ylabel(rc.target_y, size=ax_size)
-
-#     axs[6].imshow(cortex.EphB, cmap='Reds', origin='lower')
-#     axs[6].set_title('Cortical EphB', size=title_size)
-#     axs[6].set_xlabel(cc.source_x, size=ax_size)
-#     axs[6].set_ylabel(cc.source_y, size=ax_size)
-
-#     axs[7].imshow(colliculus.efnB, cmap='Reds', origin='lower')
-#     axs[7].set_title('Collicular efnB', size=title_size)
-#     axs[7].set_xlabel(rc.target_x, size=ax_size)
-#     axs[7].set_ylabel(rc.target_y, size=ax_size)
-
-#     fig.tight_layout()
-#     return fig
 
 
 

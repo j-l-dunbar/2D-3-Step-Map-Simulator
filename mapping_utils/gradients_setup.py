@@ -55,59 +55,6 @@ rc.mapped_inv = rc.df[5].argsort().astype(int)
 
 print('Map Refined: {}'.format(datetime.now() - start_time))
 
-# # Set Up the Cortico-Collicular Map
-# cc = Mapper(gamma=200, alpha=220, beta=220, R=0.11, d=0.001)
-# random_CCmap = cc.init_random_map(Num) # hash representing random connections between the source and target
-
-# # Transpose the Retina Ephrins to the SC
-# RCmap_hash = rc.df[5].astype(int) # a hashmap that represents the Bijective Connections between the Retina and the SC
-# CCmap_hash = random_CCmap
-
-
-# cc.make_map_df(random_CCmap, cortex, colliculus)
-# ret_efns = np.array([[retina.efnA[*xy], retina.efnB[*xy]] for xy in retina.positions])
-# transposed_efns = ret_efns[RCmap_hash.argsort()].T # efnA and efnB sorted to represent their transposition into the 'target' SC
-
-# cc.df[6], cc.df[7] = transposed_efns[0][CCmap_hash], transposed_efns[1][CCmap_hash]
-
-# df_CC = cc.refine_map(n_repeats=1E3).copy()
-
-
-#%%
-# fig, ax = plt.subplots(nrows=4, ncols=2, figsize=(10,20))
-# ax[0,0].scatter(*refined_map[3:5], c=refined_map[9], cmap='turbo', s=4)
-# ax[0,0].set_title('SCy')
-# ax[1,0].scatter(*refined_map[3:5], c=refined_map[8], cmap='turbo', s=4)
-# ax[1,0].set_title('SCx')
-# ax[2,0].scatter(*refined_map[3:5], c=refined_map[6], cmap='turbo', s=4)
-# ax[2,0].set_title('efnA')
-# ax[3,0].scatter(*refined_map[3:5], c=refined_map[7], cmap='turbo', s=4)
-# ax[3,0].set_title('efnB')
-
-# ax[0,1].scatter(*refined_map[8:], c=refined_map[4], cmap='turbo', s=4)
-# ax[0,1].set_title('Rety')
-# ax[1,1].scatter(*refined_map[8:], c=refined_map[3], cmap='turbo', s=4)
-# ax[1,1].set_title('RetX')
-
-# ax[2,1].scatter(*refined_map[8:], c=refined_map[1], cmap='turbo', s=4)
-# ax[2,1].set_title('EphA')
-# ax[3,1].scatter(*refined_map[8:], c=refined_map[2], cmap='turbo', s=4)
-# ax[3,1].set_title('EphB')
-""""""
-# %%
-
-# fig, ax = plt.subplots(nrows=2, figsize=(5,10))
-# ax[0].scatter(*refined_map[8:], c=refined_map[4], cmap='turbo_r', s=4)
-# ax[0].set_title('SC per Rety')
-# ax[1].scatter(*refined_map[3:5], c=refined_map[6], cmap='turbo', s=4)
-# ax[1].set_title('Ret per efnA')
-
-# # id_src, EphA_at_src, EphB_at_src, pos_at_src.T[0], pos_at_src.T[1], RCmap, efnA_at_trg, efnB_at_trg, pos_at_trg.T[0], pos_at_trg.T[1]
-# # 0,      1,           2,           3,               4,               5,     6,           7,           8,               9, 
-# # %%
-
-
-# %%
 #%%
 def source_injection(df, inject=[0.5,0.5]):
     
@@ -224,16 +171,6 @@ def on_click(event):
     if event.button is MouseButton.LEFT:
         plt.disconnect(binding_id)
 
-
-# im = plt.imread('../Color-Wheel.jpg')
-# imw = np.array(im.copy())
-# trunc = imw[450:450+Num, 450:450+Num]
-# trunc = np.array(trunc.astype(int)) # TODO -- there's a problem around here where the image is being displayed really weird *************
-# # trunc = trunc[:,:,2]
-# warped = np.zeros([250,250,3])
-# for src, trg in zip(retina.positions, colliculus.positions[rc.mapped_inv]):
-#     warped[*trg] = trunc[*src].astype(int)
-# # warped = warped[:,::,::-1]
 
 fig, ax = plt.subplots(ncols=2, figsize=(10,5))
 default_inject = [0.5,0.5]
