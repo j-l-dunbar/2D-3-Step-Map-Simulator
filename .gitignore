@@ -1,9 +1,100 @@
 Color-Wheel.jpg
-EphA_3ki_cc.png
-EphA_3ki_rc.png
 pickled_sims/efnA_KI_dicts_smallsteps.pkl
 pickled_sims/efnA_KI_dicts.pkl
 pickled_sims/EphA_KI_3_dicts.pkl
 pickled_sims/EphA_KI_dicts_smallsteps.pkl
 pickled_sims/EphA_KI_dicts.pkl
 pickled_sims/EphA_KI_large_steps_dicts.pkl
+old code/mapper_old.py
+old code/mapper_slow.py
+old code/notepad.py
+2D 3 Step Map Output/efnA Videos Retro/efnA-kiki-0.0-Cortico-ColliculuarMap-Retrograde.mp4
+2D 3 Step Map Output/efnA Videos Retro/efnA-kiki-0.1-Cortico-ColliculuarMap-Retrograde.mp4
+2D 3 Step Map Output/efnA Videos Retro/efnA-kiki-0.2-Cortico-ColliculuarMap-Retrograde.mp4
+2D 3 Step Map Output/efnA Videos Retro/efnA-kiki-0.3-Cortico-ColliculuarMap-Retrograde.mp4
+2D 3 Step Map Output/efnA Videos Retro/efnA-kiki-0.4-Cortico-ColliculuarMap-Retrograde.mp4
+2D 3 Step Map Output/efnA Videos Retro/efnA-kiki-0.05-Cortico-ColliculuarMap-Retrograde.mp4
+2D 3 Step Map Output/efnA Videos Retro/efnA-kiki-0.15-Cortico-ColliculuarMap-Retrograde.mp4
+2D 3 Step Map Output/efnA_Maps/efnA_ki_sweep_720p.mp4
+2D 3 Step Map Output/efnA_Maps/efnA_ki_sweep.mp4
+2D 3 Step Map Output/efnA_Maps/efnA-kiki-0.1-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/efnA-kiki-0.2-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/efnA-kiki-0.3-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/efnA-kiki-0.4-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/efnA-kiki-0.05-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/efnA-kiki-0.15-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/EphA-kiki-0.1-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/EphA-kiki-0.2-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/EphA-kiki-0.3-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/EphA-kiki-0.4-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/EphA-kiki-0.05-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/EphA-kiki-0.5-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/EphA-kiki-0.15-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/efnA_Maps/Wildtype-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/EphA videos/EphA-kiki-0.6-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/EphA videos/EphA-kiki-0.7-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/EphA videos/EphA-kiki-0.8-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/EphA videos/EphA-kiki-0.9-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/EphA videos/EphA-kiki-1.0-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/Mapping FIgures/efnA_0.0ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.0ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.1ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.1ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.2ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.2ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.3ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.3ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.4ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.4ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.05ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.05ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.15ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/efnA_0.15ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/efnA-kiki-0.1-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/Mapping FIgures/efnA-kiki-0.2-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/Mapping FIgures/efnA-kiki-0.3-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/Mapping FIgures/efnA-kiki-0.4-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/Mapping FIgures/efnA-kiki-0.5-Cortico-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/Mapping FIgures/EphA_0.0ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.0ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.1ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.1ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.2ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.2ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.3ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.3ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.4ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.4ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.05ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.5ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.05ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.5ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.6ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.6ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.7ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.7ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.8ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.8ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.9ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.9ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.15ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_0.15ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_1.0ki_cc.png
+2D 3 Step Map Output/Mapping FIgures/EphA_1.0ki_rc.png
+2D 3 Step Map Output/Mapping FIgures/Wildtype-Retino-ColliculuarMap-Anterograde.mp4
+2D 3 Step Map Output/Older Videos/efnA Large - kiki - 5 - Cortico-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/efnA Large - kiki - 5 - Retino-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/efnA5koko - Cortico-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/efnA5koko - Retino-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/EphA Large - kiki - 5 - Cortico-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/EphA Large - kiki - 5 - Retino-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/EphA4_ - kiki - 1 - Cortico-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/EphA4_ - kiki - 1 - Retino-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/EphA4_ - kiki - 1_cc.png
+2D 3 Step Map Output/Older Videos/EphA4_ - kiki - 1_rc.png
+2D 3 Step Map Output/Older Videos/EphA4_ - kiki - 2 - Cortico-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/EphA4_ - kiki - 2 - Retino-Colliculuar Map - Anterograde.mp4
+2D 3 Step Map Output/Older Videos/EphA4kiki_RCmap_200x200.png
+2D 3 Step Map Output/Older Videos/EphA4kiki_RCmap_250x250_6e4.png
+2D 3 Step Map Output/Older Videos/EphA4kiki_RCmap_250x250_ab220_g200_d0-0001_R0-11.png
+2D 3 Step Map Output/Older Videos/EphA4kiki_RCmap_250x250_ab220_g200_d0-001_R0-11.png
