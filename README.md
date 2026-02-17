@@ -17,10 +17,10 @@ The core of the 3 Step Map Alignment Model. First the RC map is simulated (Step 
 Drives the mapper.py and sim_tools.py code to generate a specific mutant condition. 
 
 ### vid_tri_inject.py & tri_inject_sim.py
-Uses the simulated topographic maps to generate figures representing tripple injection experiments. Injections can be performed in the source or target tissue, representing anterograde and retrograde focal injection experiments, respectively. 
+Uses the simulated topographic maps to generate figures representing tripple injection experiments, either video or stills. Injections can be performed in the source or target tissue, representing anterograde and retrograde focal injection experiments, respectively. 
 
 # Example Output
-Shows difference between the EphA-Mediated and the efn-A Mediated Mutant Phenotypes
+Shows difference between the EphA receptor-mediated and the efnA ligand-Mediated mutant phenotypes.
 
 ### Large Isl2-Mediated EphA Knockin Mutant 
 - EphA-kiki-3-Cortico-ColliculuarMap-Anterograde.mp4
