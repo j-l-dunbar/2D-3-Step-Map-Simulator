@@ -8,6 +8,12 @@ from fractions import Fraction
 
 class Tissue:
     def __init__(self, num_rows:int, name=None):
+        """ defines the biological properties of various tissues to be used in the simulation of the retino-collicular and cortico-collicular topographic maps
+
+        Args:
+            num_rows (int): sqrt of the number of neurons/axons to be simulated in the topgographic map
+            name (string, optional): name for the tissue defined. Defaults to None.
+        """
         self.name = name
         self.Num = num_rows
         
@@ -27,6 +33,7 @@ class Tissue:
         self.efnA_dict, self.efnB_dict = None, None
 
     def set_gradients(self):
+        ''' defines the expression gradients to be use for simulation a map phenotype ''' 
         if self.EphA_dict: self.EphA = self.sum_grads(self.EphA_dict)
         if self.EphB_dict: self.EphB = self.sum_grads(self.EphB_dict)
         if self.efnA_dict: self.efnA = self.sum_grads(self.efnA_dict)
@@ -42,19 +49,17 @@ class Tissue:
         return self.sum_grads_list(np.array(list(gradient_dict.values())))
         
     def sum_grads_list(self, grad_list):
+        """takes a series of expression profiles and combines them into a single 2D expression profile
+        """
         summed = grad_list[0]
         for grad in grad_list[1:]:
             summed+= grad
-        summed[summed<0] = 0 # to accound for hypothetical negative 'knockin' mutants (knockdown?)
-        # summed = self.normalize_grad(summed) 
+        summed[summed<0] = 0 # to accound for hypothetical negative 'knockin' mutants (i.e., knockdown mutants)
+        # summed = self.normalize_grad(summed) #TODO nomalizing the 2D gradients should be implemented
         return summed
 
     def normalize_grad(self, xy): # TODO this normalizing strategy doesn't work for the 2D gradients -- this needs to be coded differently -- normalizing the gradients before stretching them out could be a slution, but that would need come way to incorporate specific Isl2 insertions/deletions for specific members, after they have been summed and turned 2D
-        """_summary_
-        Args:
-            yy (ndarray): The values representing the summed Eph/ephrin gradient. 
-        Returns:
-            _type_: The array normalized to set the area under the curve to be 1.
+        """attempting to normalize the 2D expression gradients. Not yet implemented
         """
         # for i, yy in enumerate(xy): # this only works for 1D arrays... 
         #     x_spacing = 1/yy.shape[0]
@@ -66,6 +71,18 @@ class Tissue:
         raise NotImplementedError("Normalization is not properly implemented now.") # TODO find a better way to standardize the "Area Under the Curve" of the summed gradientes into a standard total value
 
     def make_std_grads(self, EphA_angle=90, EphB_angle=180, efnA_angle=270, efnB_angle=0):
+        """ defines the gradients used to simulate a given mutant topographic map
+        here they are defined as a simple 1D function stretched across the tissue axis into 2D, but any 'image' representing a 2D expression profile will work just as well to feed into the simulation
+
+        Args:
+            EphA_angle (int, optional): the angle at which the EphA gradients run relative to the tissue axes. Defaults to 90.
+            EphB_angle (int, optional): the angle at which the EphB gradients run relative to the tissue axes. Defaults to 180.
+            efnA_angle (int, optional): the angle at which the efnA gradients run relative to the tissue axes. Defaults to 270.
+            efnB_angle (int, optional): the angle at which the efnB gradients run relative to the tissue axes. Defaults to 0.
+
+        Returns:
+            [np.ndarray, ...]: a series of arrays representing the graded expression of axon guidance molecules
+        """
         x= self.grid_fract
 
         EphA_comps = np.cos(EphA_angle*np.pi/180)*x[1] + np.sin(EphA_angle*np.pi/180)*x[0]
@@ -118,6 +135,7 @@ class Tissue:
         return ret_EphAs_dict, ret_EphBs_dict, ret_efnAs_dict, ret_efnBs_dict, sc_efnAs_dict, sc_efnBs_dict, cort_EphAs_dict, cort_EphBs_dict
     
     def make_isl2_ki(self, mutant_name:str, strength:float, target_dict:dict, het:bool=False):
+        ''' defines a conditional knockin under control of isl2 (i.e., in 50% of the projecting axons)'''
         if mutant_name in target_dict.keys(): 
             raise NameError("That gene name has already been asigned.")        
         isl2 = self.isl2
@@ -127,6 +145,7 @@ class Tissue:
         return figure_title, target_dict
 
     def make_isl2_ko(self, mutant_name:str, target_dict:dict, het:bool=False):
+        ''' defines a conditional knockout under control of isl2 (i.e., in 50% of the projecting axons)'''
         if mutant_name not in target_dict.keys(): 
             raise NameError("That gene has not been defined")
         isl2 = self.isl2
@@ -140,7 +159,7 @@ class Tissue:
 
 class Mapper:
     def __init__(self, alpha=60, beta=60, gamma=120, R=0.11, d=0.03, Num=100, **_):
-        """ sets up the params for map refinement before """
+        """ sets up the params for map refinement before simulating a given mutant condition. Map is refined based on mathematical modeling done by Koulakov and Tsigankov. """
         # 1 -- define the mapping params
         self.alpha = alpha
         self.beta = beta
@@ -153,13 +172,15 @@ class Mapper:
         self.positions = np.array([y for x in self.grid_index.T for y in x])
         
     def init_random_map(self):
+        """ a randomized 1D array representing the initial unrefined map between loci in the source tissue and loci in the target tissue
+        """
         return np.random.permutation(self.Num**2)
     
     def make_map_df(self, hash_map, src_tissue, trg_tissue):    
         ''' takes the various arrays and combines them into a single dataframe for Numba to opperate on efficiently 
                 - the abstraction of doing it this way is worth if for the speed that is gained
         '''
-        df_index = {
+        df_index = { # definiton of the columns that are returned in the np.ndarray at the end of the simulation
                  'id_src': 0, # index column 
             'EphA_at_src': 1, # [EphA] this axons carries
             'EphB_at_src': 2, # [EphB] this axons carries
@@ -185,6 +206,8 @@ class Mapper:
         return self.df
 
     def df_show_grads(self):
+        """visualizes the gradients used for simulating a topographic map phenotype
+        """
         df = self.df
         EphA, EphB = df[1:3]
         efnA, efnB = df[6:8][:,df[5].argsort()]

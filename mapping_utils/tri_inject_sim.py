@@ -54,6 +54,17 @@ if not mutations: mutations = ['Wildtype']
 
 
 def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, retro=False):
+    """generates a simulated focal injection experiment based on simulated topographic maps phenotypes (df)
+
+    Args:
+        df (np.ndarray): the simulated topographic map phenotype
+        inject (list, optional): location of the injection. Defaults to [0.5,0.5].
+        max_diff (float, optional): the size of the central focus of injection. Defaults to 0.025.
+        retro (bool, optional): if the injection is in the source or target tissue. Defaults to False.
+
+    Returns:
+        [np.ndarray, np.ndarray]: images representing the source and target tissues in a given focal injection expt
+    """
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing the injectios point
     
     if retro: in_range_src = np.linalg.norm((df[8:] - injection_arr), axis=0) # all distances to point in target (L2 Norm) 
@@ -89,6 +100,8 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, retro=False):
 
 
 def tri_injection(df, center, r=1/8, retro=False):
+    """ sets up a tripple injection experiment to simulate 3 injections sites spaced around an equilateral triangele
+    """
     coords1 = [center[0] - r, center[1] - 2*r] 
     coords2 = [center[0] + r, center[1] - 2*r] 
     coords3 = [center[0]    , center[1]      ]
@@ -116,7 +129,7 @@ def tri_injection(df, center, r=1/8, retro=False):
 
 
 def follow_cursor(event):
-    ''' glued to the cursor when on the map '''
+    ''' injection site glued to the cursor when on the map '''
     if event.inaxes:
         retro = bool(event.modifiers)
         inj = [event.ydata/Num, event.xdata/Num]
@@ -140,10 +153,15 @@ def follow_cursor(event):
 def on_click(event): 
     ''' stop doing `binding_id` on left click '''
     if event.button is MouseButton.LEFT:
-        # ant_ret ^= 1
+        # ant_ret ^= 1 #TODO want to add the ability to interact with the figure and change between anterograde and retrograde injecitons
         pass
 
 def set_axis_labels(col_map, axes):
+    """lables the figure axes
+    Args:
+        col_map (object): source of the names for a given experimental condition
+        axes (mpl axes): matplotlib axes to be labeled
+    """
     axes[0].set_title(col_map.source_name, size=15)
     axes[0].set_xlabel(col_map.source_x, size=12)
     axes[0].set_ylabel(col_map.source_y, size=12)
@@ -155,6 +173,7 @@ def set_axis_labels(col_map, axes):
 
 
 for col_map in [rc, cc]:
+    """generate the figures for the retino-collicular map and the cortico-collicular map"""
     fig, axes = plt.subplots(ncols=2, figsize=(10,5))
     axes = axes.flat
     default_inject = [0.5,0.5+1/8]

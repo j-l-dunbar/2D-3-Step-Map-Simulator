@@ -19,14 +19,33 @@ show_grads_bool = False
 save_grads_bool = True
 complex_transpose = False
 
-sim_params = {'gamma':100, 'alpha':220, 'beta':220, 'R':0.11, 'd':3/Num**2, 'Num':Num, 'show_grads_bool':show_grads_bool, 'complex_transpose':False}
+sim_params = {'gamma':100, 
+              'alpha':220, 
+              'beta':220, 
+              'R':0.11, 
+              'd':3/Num**2, 
+              'Num':Num, 
+              'show_grads_bool':show_grads_bool, 
+              'complex_transpose':complex_transpose,
+              }
 
-fname = r'..\pickled_sims\efnA_KI_dicts.pkl'
+fname = r'..\pickled_sims\efnA_KI_dicts.pkl' # previously simulated topographic map phenotype
 with open(fname, 'rb') as f:
     mutant_frames = pickle.load(f)
 mutations, retina, colliculus, rc, cc = list(mutant_frames.values())[0]
 
 def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, retro=False):
+    """_summary_
+
+    Args:
+        df (np.ndarray): simulated mutant map
+        inject (list, optional): location of a single injection. Defaults to [0.5,0.5].
+        max_diff (float, optional): sets the size of the defined focus within a diffuse injection site. Defaults to 0.025.
+        retro (bool, optional): sets if anterograde or retrograde injection. Defaults to False.
+
+    Returns:
+        [np.ndarrray, np.ndarray]: how the source and target tissues are predicted to look in a given experimental condition
+    """
     injection_arr = np.vstack((np.ones_like(df[3])*inject[0], np.ones_like(df[4])*inject[1])) # array representing the injectios point
     
     if retro: in_range_src = np.linalg.norm((df[8:] - injection_arr), axis=0) # all distances to point in target (L2 Norm) 
@@ -62,6 +81,17 @@ def si_src_trg_arrs(df, inject=[0.5,0.5], max_diff=0.025, retro=False):
 
 
 def tri_injection(df, center, r=3/32, retro=False):
+    """simulates a tripple injeciton experiment for a given simulated topographic map phenotype
+
+    Args:
+        df (np.ndarray): simulated topographic map
+        center (list): x,y coords for location centre
+        r (float, optional): radius of separaion. Defaults to 3/32.
+        retro (bool, optional): simulate retrograde injections? Defaults to False.
+
+    Returns:
+        list: normalized source and target loci
+    """
     coords1 = [center[0] - r* np.sqrt(2), center[1] - r* np.sqrt(2)] # Red and Green
     coords2 = [center[0] - r* np.sqrt(2), center[1] + r* np.sqrt(2)] 
     coords3 = [center[0] +r , center[1] ] # White
@@ -84,23 +114,31 @@ def tri_injection(df, center, r=3/32, retro=False):
     return src/src.max(), trg/trg.max()
 
 def update_figure(phi):
-        inj = circle(phi)
-        axes[0].clear()
-        axes[1].clear()
-        
-        src, trg = tri_injection(col_map.df, inj, retro=True)
+    """generates the figure for an updated focal injection experiment based on a circular path around the tissue
+    Args:
+        phi (float): assigns the centre of injection that varies around around a circular path defined by phi
+    Returns:
+        axes: updated image axes
+    """
+    inj = circle(phi)
+    axes[0].clear()
+    axes[1].clear()
+    
+    src, trg = tri_injection(col_map.df, inj, retro=True)
 
-        axes[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0) # image of staned axons at the source
-        axes[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0) # image of staned axons at the target
+    axes[0].imshow(src, cmap='Greys_r', origin='lower', vmax=1, vmin=0) # image of stained axons at the source
+    axes[1].imshow(trg, cmap='Greys_r', origin='lower', vmax=1, vmin=0) # image of stained axons at the target
 
-        set_axis_labels(col_map, axes)
-        fig.canvas.draw()
-        return axes,
+    set_axis_labels(col_map, axes)
+    fig.canvas.draw()
+    return axes,
         
 def circle(phi, radius_circ=0.3, offset=0.5):
+    """converts angle phi into coordinates"""
     return np.array([radius_circ*np.cos(phi)+offset, radius_circ*np.sin(phi)+offset])
 
 def set_axis_labels(col_map, axes):
+    """lables the axes for a simulated map phenotype"""
     axes[0].set_title(col_map.source_name, size=15)
     axes[0].set_xlabel(col_map.source_x, size=12)
     axes[0].set_ylabel(col_map.source_y, size=12)
@@ -112,6 +150,7 @@ def set_axis_labels(col_map, axes):
 
 
 for x in list(mutant_frames.keys()):
+    """simulates an array of mutant phenotypes"""
     try:
         mutations, retina, colliculus, rc, cc, = mutant_frames[x]
     except:
@@ -148,6 +187,5 @@ for x in list(mutant_frames.keys()):
 
 
 print('Total Time: {}'.format(datetime.now() - start_time))
-
 
 #%%
