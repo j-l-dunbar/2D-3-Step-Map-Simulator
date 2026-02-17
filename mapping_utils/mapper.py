@@ -1,4 +1,18 @@
+"""defines the parameters for a mutant condition and simulates the refined topographic connections between a source and target tissue that will result, based on mathematical modeling done by Tsigankov and Koulakov. 
 
+Returns:
+    np.ndarray: the refined map phenotype, defined as follows:
+                 'id_src': 0, # index column 
+            'EphA_at_src': 1, # [EphA] this axons carries from the source tissue     
+            'EphB_at_src': 2, # [EphB] this axons carries from the source tissue
+        'pos_at_src.T[0]': 3, # source X coords (decimal)
+        'pos_at_src.T[1]': 4, # source Y coods (decimal)
+                  'RCmap': 5, # how this axons connects to the SC
+            'efnA_at_trg': 6, # [efnA] that this axons sees in the target
+            'efnB_at_trg': 7, # [efnB] that this axons sees in the target
+        'pos_at_trg.T[0]': 8, # target X coords
+        'pos_at_trg.T[1]': 9, # target Y coords
+"""
 import numpy as np
 from numba import njit
 import matplotlib.pyplot as plt

@@ -1,3 +1,5 @@
+"""creates a video file that represents a continuoum of inection experiments along a circular path, either as anterograde injections or as retrograde injections
+"""
 #%%
 import numpy as np
 import matplotlib.pyplot as plt

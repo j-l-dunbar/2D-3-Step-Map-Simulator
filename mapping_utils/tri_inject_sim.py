@@ -1,3 +1,5 @@
+''' simulates a triple focal injection expreiment at an arbitrary location in the source or target tissue '''
+
 #%%
 import numpy as np
 import matplotlib.pyplot as plt

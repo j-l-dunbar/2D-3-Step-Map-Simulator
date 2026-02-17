@@ -1,3 +1,5 @@
+"""defines the gradients to be used for topographic map refinement in a given experimental condition
+"""
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
