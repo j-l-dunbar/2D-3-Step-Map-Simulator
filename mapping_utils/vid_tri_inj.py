@@ -21,7 +21,7 @@ complex_transpose = False
 
 sim_params = {'gamma':100, 'alpha':220, 'beta':220, 'R':0.11, 'd':3/Num**2, 'Num':Num, 'show_grads_bool':show_grads_bool, 'complex_transpose':False}
 
-fname = r'G:\Cloud_Files\OneDrive\__GitRepos__\2D 3 Step Map SImulator\efnA_KI_dicts.pkl'
+fname = r'..\pickled_sims\efnA_KI_dicts.pkl'
 with open(fname, 'rb') as f:
     mutant_frames = pickle.load(f)
 mutations, retina, colliculus, rc, cc = list(mutant_frames.values())[0]
