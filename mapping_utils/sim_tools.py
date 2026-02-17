@@ -1,3 +1,5 @@
+""" Sets up and drives the 2D 3 Step Map Alignment simulation of RC and CC topographic mapping. """
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -13,16 +15,16 @@ warnings.filterwarnings('ignore')
 
 from datetime import datetime
 
-# def coords_to_img(coords, values, Num):
-#     new_img = np.ones((Num, Num))
-#     for xy, i in zip(coords, values):
-#         new_img[*xy] = i
-#     return new_img
-
-
-
 
 def make_std_tissues(sim_params):
+    """ Sets up the gradients present in each tissue, ready to simulate the RC and CC maps
+
+    Args:
+        sim_params (dict): parameters to feed into the Mapper class, driving the simulation
+
+    Returns:
+        [object, object, object]: three objects that contain the defined gradients for the retinal, collicular, and cortical tissues, respectively.
+    """
     Num = sim_params['Num']
     # Setting up gradients in the Retina, Superior Colliculus, and the Primary Visual Cortex
     retina = Tissue(Num, 'Retina')
@@ -42,11 +44,22 @@ def make_std_tissues(sim_params):
     return retina, colliculus, cortex
 
 def run_map_sim(retina, colliculus, cortex, sim_params):
+    """ takes the defined gradients for a given mutant phenotype and drives the simulation
+
+    Args:
+        retina (object): Describes the gradients of retinal signaling molecules.
+        colliculus (object): Describes the gradients of collicular signaling molecules.
+        cortex (object): Describes the gradients of cortical signaling molecules.
+        sim_params (dict): Sets the various paramaters used to drive the simulation code, as accepted by the Mapper class. 
+
+    Returns:
+        [np.ndarray, ...]: rc map, cc map, rc gradients for figures, cc gradients for figures
+    """
     retina.set_gradients()
     colliculus.set_gradients()
     cortex.set_gradients() 
 
-    # Set up the Retino-Collicular Map 
+    # Set up the initial Retino-Collicular Map 
     rc = Mapper(**sim_params)
     rc.name = "Retino-Collicular Map"
     rc.source_name, rc.target_name = 'Retina', 'Colliculus'
@@ -55,7 +68,7 @@ def run_map_sim(retina, colliculus, cortex, sim_params):
     random_RCmap = rc.init_random_map()
     rc.make_map_df(random_RCmap, retina, colliculus)
 
-    # Set Up the Cortico-Collicular Map
+    # Set Up the initial Cortico-Collicular Map
     cc = Mapper(**sim_params)
     cc.name = "Cortico-Collicular Map"
     cc.source_name, cc.target_name = 'Cortex', 'Colliculus'
@@ -68,8 +81,6 @@ def run_map_sim(retina, colliculus, cortex, sim_params):
 
     rc_fig_grads = rc.df_show_grads()
     fig = rc_fig_grads
-
-    
     
     x_names = [rc.source_x, rc.target_x, rc.source_x, rc.target_x]
     y_names = [rc.source_y, rc.target_y, rc.source_y, rc.target_y]
@@ -140,7 +151,7 @@ def run_map_sim(retina, colliculus, cortex, sim_params):
 
 
 def sim_efnA_ki(strength, sim_params):
-    'Simulates an Isl2-mediated efnA knock in of a specified strength'
+    '''Simulates an Isl2-mediated efnA knock in of a specified strength'''
     # initialize the gradients to be used for mapping
     retina, colliculus, cortex = make_std_tissues(sim_params)
     mutations, retina.efnA_dict =  retina.make_isl2_ki('efnA', strength, retina.efnA_dict)
@@ -150,7 +161,7 @@ def sim_efnA_ki(strength, sim_params):
     return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
 
 def sim_efnA_ko(target, sim_params):
-    'Simulates an Isl2-mediated efnA knock out of a specified strength'
+    '''Simulates an Isl2-mediated efnA knock out of a specified strength'''
     # initialize the gradients to be used for mapping
     retina, colliculus, cortex = make_std_tissues(sim_params)
     mutations, retina.efnA_dict =  retina.make_isl2_ko(target, retina.efnA_dict)
@@ -160,7 +171,7 @@ def sim_efnA_ko(target, sim_params):
     return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
 
 def sim_EphA_ki(strength, sim_params):
-    'Simulates an Isl2-mediated EphA knock in of a specified strength'
+    '''Simulates an Isl2-mediated EphA knock in of a specified strength'''
     # initialize the gradients to be used for mapping
     retina, colliculus, cortex = make_std_tissues(sim_params)
     mutations, retina.EphA_dict =  retina.make_isl2_ki('EphA', strength, retina.EphA_dict)
@@ -170,7 +181,7 @@ def sim_EphA_ki(strength, sim_params):
     return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
 
 def sim_EphA_ko(target, sim_params):
-    'Simulates an Isl2-mediated EphA knock out of a specified strength'
+    '''Simulates an Isl2-mediated EphA knock out of a specified strength'''
     # initialize the gradients to be used for mapping
     retina, colliculus, cortex = make_std_tissues(sim_params)
     mutations, retina.EphA_dict =  retina.make_isl2_ko(target, retina.EphA_dict)
@@ -180,6 +191,7 @@ def sim_EphA_ko(target, sim_params):
     return mutations, retina, colliculus, rc, cc, rc_fig_grads, cc_fig_grads
 
 def save_grad_pics(mutations, rc_fig_grads, cc_fig_grads, dpi=300):
+    ''' saves the gradient figures as png files '''
     grads_title = f"{'-'.join(mutations)}"
     fname_grads = grads_title.replace('/','').replace(' ', '')
     rc_fig_grads.savefig(fname_grads + '_rc.png', dpi=dpi)
