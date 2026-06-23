@@ -171,15 +171,15 @@ Increasing `Num` improves spatial resolution but increases runtime roughly as O(
 
 ```
 Retina          Superior Colliculus       Visual Cortex
-  │                     │                      │
-  │   EphA/ephrinA       │                      │
-  │   EphB/ephrinB       │   EphA/ephrinA       │
-  └──── Step 1: Refine RC Map ──────────────────┘
-                         │
-              Step 2: Transpose retinal
-              ephrins into SC coordinate space
-                         │
-  Cortex ──── Step 3: Refine CC Map ────► SC
+  │                      │                      │
+  │ EphA/ephrinA         │         EphA/ephrinA │
+  │ EphB/ephrinB         │         EphB/ephrinB │
+  └────────── Step 1: Refine RC Map             |
+                         │                      |
+              Step 2: Transpose retinal         |
+              ephrins into SC coordinate space  |
+                         │                      V
+  Cortex ──── Step 3: Refine CC Map ────────── SC
 ```
 
 The transposition step (Step 2) is the key biological insight of the model: retinal ephrin concentrations, carried by RGC axon terminals, are projected into the SC and subsequently guide corticotectal axon targeting.
