@@ -5,6 +5,7 @@ A Python implementation of the **3-Step Map Alignment Model** (Savier et al., 20
 The model reproduces how molecular gradients of Eph receptors and ephrin ligands guide retinal ganglion cell (RGC) axons to their correct targets during the formation of the **Retino-Collicular (RC)** and **Cortico-Collicular (CC)** maps.
 
 The update code is more performant, able to simulate more than 50,000 connections between the source and target tissues. It is also now able to simulate the full 2D scope of topographic maps between the retina and colliculus (retino-collicular or RC map), as well as the subsequent and aligned topographic map between the primary visual cortex and the colliculus (cortico-collicular or CC map).
+
 ---
 
 ## Background
