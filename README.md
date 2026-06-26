@@ -1,8 +1,8 @@
 # 3-Step Map Alignment Simulation
 
-A Python implementation of the **3-Step Map Alignment Model** (Savier et al., 2017) for simulating the development of topographic neural maps between the retina, superior colliculus (SC), and primary visual cortex (V1).
+An expanded 2D Python implementation of the **3-Step Map Alignment Model** (Savier et al., 2017, 2020) for simulating the development of topographic neural maps between the retina, superior colliculus (SC), and primary visual cortex (V1).
 
-The model reproduces how molecular gradients of Eph receptors and ephrin ligands guide retinal ganglion cell (RGC) axons to their correct targets during the formation of the **Retino-Collicular (RC)** and **Cortico-Collicular (CC)** maps.
+The model reproduces how molecular gradients of retinal Eph receptors guide retinal ganglion cell (RGC) axons to their correction targets during the formation of the **Retino-Collicular (RC)** and, more importantly, how retinal gradinets of ephrin ligands guide Layer V neurons from the primary visual cortex during the formation of the **Cortico-Collicular (CC)** maps.
 
 The update code is more performant, able to simulate more than 50,000 connections between the source and target tissues. It is also now able to simulate the full 2D scope of topographic maps between the retina and colliculus (retino-collicular or RC map), as well as the subsequent and aligned topographic map between the primary visual cortex and the colliculus (cortico-collicular or CC map).
 
@@ -13,7 +13,7 @@ The update code is more performant, able to simulate more than 50,000 connection
 During visual system development, RGC axons must find their precise targets in the superior colliculus to create an ordered, continuous map of visual space. This is governed largely by complementary gradients of Eph receptors (on RGC axons) and ephrin ligands (in the SC). This codebase simulates that process in 2D, allowing users to:
 
 - Model wildtype map formation
-- Introduce genetic mutations (knock-ins and knock-outs) via Isl2-mediated targeting
+- Introduce genetic mutations (knock-ins and knock-outs) via Isl2-mediated and constitutive ablation
 - Visualise predicted phenotypes via simulated focal injection experiments
 - Generate video animations of injection experiments sweeping across the tissue
 
@@ -31,7 +31,7 @@ During visual system development, RGC axons must find their precise targets in t
 
 ### `mapper.py`
 
-The core of the 2D refinement algorithm. The Tissue class defines the gradients to be used for topographic map refinement in a given experimental condition. The Mapper class takes those gradients and generates the resultant refined map, based on an algorithm that minimizes map energy as defined Tisigankov and Koulakov.
+The core of the 2D refinement algorithm. The `Tissue` class defines the gradients to be used for topographic map refinement in a given experimental condition. The `Mapper` class takes those gradients and generates the resultant refined map, based on an algorithm that minimizes map energy as defined Tisigankov and Koulakov.
 
 Contains the two core classes:
 
@@ -83,7 +83,7 @@ Shows difference between the EphA receptor-mediated and the efnA ligand-mediated
 **Python 3.9+** is recommended.
 
 ```bash
-pip install numpy matplotlib seaborn
+pip install numpy numba matplotlib seaborn
 ```
 
 For video export (`vid_tri_inj.py`), **FFmpeg** must be installed and accessible on your system PATH:
@@ -189,4 +189,5 @@ The transposition step (Step 2) is the key biological insight of the model: reti
 
 ## Reference
 
-> Savier, E., et al. (2017). *A molecular mechanism for the topographic alignment of convergent neural maps.* eLife. https://doi.org/10.7554/eLife.20470
+> Savier E, Eglen SJ, Bathélémy A, Perraut M, Pfrieger FW, Lemke G, Reber M. A molecular mechanism for the topographic alignment of convergent neural maps. Elife. 2017 Mar 14;6:e20470. doi: 10.7554/eLife.20470. PMID: 28322188; PMCID: PMC5360444. 
+> Savier EL, Dunbar J, Cheung K, Reber M. New insights on the modeling of the molecular mechanisms underlying neural maps alignment in the midbrain. Elife. 2020 Sep 30;9:e59754. doi: 10.7554/eLife.59754. PMID: 32996883; PMCID: PMC7527235.
